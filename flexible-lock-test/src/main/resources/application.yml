@@ -1,0 +1,29 @@
+lock:
+  props:
+    - alias: test-1
+      locktype: redis
+      attributes:
+        address: redis://127.0.0.1:6379
+        password: mypassword
+      retryCount: 10
+      waitTime: 3000
+      enableLock: false
+    - alias: test-2
+      locktype: standalone
+      retryCount: 10
+      waitTime: 30000
+    - alias: test-3
+      locktype: standalone
+      retryCount: 3
+      waitTime: 3000
+    - alias: test-4
+      locktype: zookeeper
+      attributes:
+        connect: 127.0.0.1:2181
+
+logging:
+  level:
+    cn:
+      wubo:
+        flexible:
+          lock: debug

@@ -1,6 +1,6 @@
 # Flexible Lock 灵锁
 
-? 一个基于Spring Boot的锁starter，提供了统一的锁接口和多种实现方式，包括Redis单点、Redis集群、Redis哨兵、Zookeeper和本地锁。通过简单的配置即可在项目中使用锁功能。
+> 一个基于Spring Boot的锁starter，提供了统一的锁接口和多种实现方式，包括Redis单点、Redis集群、Redis哨兵、Zookeeper和本地锁。通过简单的配置即可在项目中使用锁功能。
 
 
 [![](https://jitpack.io/v/com.gitee.wb04307201/flexible-lock.svg)](https://jitpack.io/#com.gitee.wb04307201/flexible-lock)

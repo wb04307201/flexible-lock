@@ -37,7 +37,6 @@ public class ZookeeperLock extends AbstractLock {
     @Override
     public void validate() {
         super.validate();
-        validateStringAttributeNotEmpty("connect", "Zookeeper connection string is required");
         properties.getAttributes().putIfAbsent("maxElapsedTimeMs", 1000);
         properties.getAttributes().putIfAbsent("sleepMsBetweenRetries", 4);
         properties.getAttributes().putIfAbsent("root", "/locks");

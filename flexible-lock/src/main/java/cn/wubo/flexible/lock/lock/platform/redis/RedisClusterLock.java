@@ -30,9 +30,7 @@ public class RedisClusterLock extends AbstractLock {
     @Override
     public void validate() {
         super.validate();
-        validateStringArrayAttributeNotEmpty("nodes", "Redis Cluster nodes are required");
-        validateStringAttributeNotEmpty("password", "Redis Cluster password is required");
-}
+    }
 
     @Override
     public Boolean tryLock(String key) {

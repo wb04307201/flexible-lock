@@ -9,7 +9,7 @@ import jakarta.validation.Validator;
 
 public class RedisSentinelFactory implements IFactory {
     @Override
-    public Boolean supportsPlatform(String locktype) {
+    public Boolean supports(String locktype) {
         return "redis-sentinel".equals(locktype);
     }
 

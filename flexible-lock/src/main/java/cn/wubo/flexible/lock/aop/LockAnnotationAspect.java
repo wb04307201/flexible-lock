@@ -176,87 +176,74 @@ public void before(JoinPoint joinPoint, Locking locking) {
     }
 
     /**
-     * 尝试获取锁的方法
-     *
-     * @param locking         锁的配置信息，包括别名、键、超时时间等
-     * @param lock            锁的实现对象，用于执行实际的锁操作
-     * @param methodSignature 方法签名，包含方法名、参数类型等信息，用于日志记录
-     * @param target          目标对象，即被拦截的方法所属的实例
-     * @param args            方法参数数组，用于日志记录和生成锁的键
-     */
-    private void tryLock(Locking locking, ILock lock, MethodSignature methodSignature, Object target, Object[] args) {
-        if (lock == null) {
-            throw new IllegalArgumentException("Lock object cannot be null");
-        }
+ * 尝试获取锁的方法
+ *
+ * @param locking         锁的配置信息，包括别名、键、超时时间等
+ * @param lock            锁的实现对象，用于执行实际的锁操作
+ * @param methodSignature 方法签名，包含方法名、参数类型等信息，用于日志记录
+ * @param target          目标对象，即被拦截的方法所属的实例
+ * @param args            方法参数数组，用于日志记录和生成锁的键
+ */
+private void tryLock(Locking locking, ILock lock, MethodSignature methodSignature, Object target, Object[] args) {
+    if (lock == null) {
+        throw new IllegalArgumentException("Lock object cannot be null");
+    }
 
-        // 获取当前线程ID，用于日志记录
-        Long threadId = Thread.currentThread().getId();
-        // 生成新的锁键
-        String newKey = getNewKey(locking.alias(), locking.keys(), target, methodSignature.getMethod(), args);
-        // 记录尝试加锁的日志
-        log.debug("尝试加锁: thread={} method={} alias={} key={}",
-                threadId, methodSignature.getMethod().getName(), locking.alias(), newKey);
+    Long threadId = Thread.currentThread().getId();
+    String newKey = getNewKey(locking.alias(), locking.keys(), target, methodSignature.getMethod(), args);
 
-        // 尝试获取锁，根据配置的超时时间决定是否使用带超时的尝试方法
-        long startTime = System.currentTimeMillis();
-        Boolean tryLock = locking.time() > 0 ? lock.tryLock(newKey, locking.time(), locking.unit()) : lock.tryLock(newKey);
-        long duration = System.currentTimeMillis() - startTime;
+    String methodName = methodSignature.getMethod().getName();
+    String alias = locking.alias();
+    String key = newKey;
 
+    log.debug("尝试加锁: thread={} method={} alias={} key={}", threadId, methodName, alias, key);
 
-        int count = 0;
-        long totalWaitTime = 0;
-        // 如果获取锁失败，并且配置了重试次数，则进行重试
-        if (Boolean.FALSE.equals(tryLock)) {
-            int retryCount = lock.getRetryCount();
+    long startTime = System.currentTimeMillis();
+    Boolean tryLock = locking.time() > 0 ? lock.tryLock(key, locking.time(), locking.unit()) : lock.tryLock(key);
+    long duration = System.currentTimeMillis() - startTime;
 
-            // 重试条件: retryCount > 0 且已重试次数小于最大重试次数，或者 retryCount < 0 (无限重试)
-            boolean shouldRetry = (retryCount > 0 && count < retryCount) || retryCount < 0;
+    int count = 0;
+    long totalWaitTime = 0;
 
-            while (Boolean.FALSE.equals(tryLock) && shouldRetry) {
-                count++;
-                try {
-                    // 使用指数退避策略计算等待时间
-                    long waitTime = lock.calculateBackoffTime(count);
-                    totalWaitTime += waitTime;
+    if (!Boolean.TRUE.equals(tryLock)) {
+        int retryCount = lock.getRetryCount();
 
-                    // 记录重试日志
-                    log.debug("加锁失败，第{}次重试: thread={} method={} alias={} key={} waitTime={}ms",
-                            count, threadId, methodSignature.getMethod().getName(), locking.alias(), newKey, waitTime);
+        while (!Boolean.TRUE.equals(tryLock) && ((retryCount > 0 && count < retryCount) || retryCount < 0)) {
+            count++;
+            try {
+                long waitTime = lock.calculateBackoffTime(count);
+                totalWaitTime += waitTime;
 
-                    // 等待一段时间后重试
-                    if (waitTime > 0) {
-                        Thread.sleep(waitTime);
-                    } else {
-                        // 防止忙等
-                        Thread.yield();
-                    }
-                } catch (InterruptedException e) {
-                    // 恢复中断状态
-                    Thread.currentThread().interrupt();
-                    String errorMsg = String.format("获取锁过程中被中断: method=%s alias=%s key=%s retryCount=%d",
-                            methodSignature.getMethod().getName(), locking.alias(), newKey, count);
-                    log.warn(errorMsg);
-                    throw new LockRuntimeException("获取锁过程中被中断", e);
+                log.debug("加锁失败，第{}次重试: thread={} method={} alias={} key={} waitTime={}ms",
+                        count, threadId, methodName, alias, key, waitTime);
+
+                if (waitTime > 0) {
+                    Thread.sleep(waitTime);
+                } else {
+                    Thread.yield();
                 }
-
-                // 重试获取锁
-                tryLock = locking.time() > 0 ? lock.tryLock(newKey, locking.time(), locking.unit()) : lock.tryLock(newKey);
-
-                // 更新重试条件
-                shouldRetry = (retryCount > 0 && count < retryCount) || retryCount < 0;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                String errorMsg = String.format("获取锁过程中被中断: method=%s alias=%s key=%s retryCount=%d",
+                        methodName, alias, key, count);
+                log.warn(errorMsg);
+                throw new LockRuntimeException("获取锁过程中被中断", e);
             }
-        }
 
-        // 根据最终是否获取到锁，记录相应的日志
-        if (Boolean.FALSE.equals(tryLock)) {
-            String errorMsg = String.format("获取锁失败: method=%s alias=%s key=%s totalRetryTime=%dms retryCount=%d",
-                    methodSignature.getMethod().getName(), locking.alias(), newKey, totalWaitTime, count);
-            log.debug(errorMsg);
-            throw new LockRuntimeException(errorMsg);
-        } else {
-            log.debug("加锁成功: thread={} method={} alias={} key={} duration={}ms",
-                    threadId, methodSignature.getMethod().getName(), locking.alias(), newKey, duration);
+            tryLock = locking.time() > 0 ? lock.tryLock(key, locking.time(), locking.unit()) : lock.tryLock(key);
         }
     }
+
+    if (!Boolean.TRUE.equals(tryLock)) {
+        String errorMsg = String.format("获取锁失败: method=%s alias=%s key=%s totalRetryTime=%dms retryCount=%d",
+                methodName, alias, key, totalWaitTime, count);
+        log.debug(errorMsg);
+        throw new LockRuntimeException(errorMsg);
+    } else {
+        log.debug("加锁成功: thread={} method={} alias={} key={} duration={}ms",
+                threadId, methodName, alias, key, duration);
+    }
+}
+
 
 }

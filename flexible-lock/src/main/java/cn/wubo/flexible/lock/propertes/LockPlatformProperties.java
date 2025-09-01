@@ -20,10 +20,6 @@ public class LockPlatformProperties {
     @Pattern(regexp = "redis|redis-cluster|redis-sentinel|zookeeper|standalone")
     private String locktype;
 
-//    private RedisProperties redis = new RedisProperties();
-//
-//    private ZookeeperProperties zookeeper = new ZookeeperProperties();
-
     private Boolean enableLock = true;
 
     private Integer retryCount = 0;
@@ -35,30 +31,4 @@ public class LockPlatformProperties {
     private String retryStrategy = "fixed";
 
     Map<String, Object> attributes = new HashMap<>();
-
-//    @Data
-//    public static class RedisProperties {
-//        // 单例地址
-//        private String address = "localhost:6379";
-//        // 密码
-//        private String password;
-//        // 数据库
-//        private Integer database = 0;
-//        // 集群、哨兵节点
-//        private List<String> nodes;
-//        // 烧饼主节点名
-//        private String masterName;
-//    }
-
-//    @Data
-//    public static class ZookeeperProperties {
-//        // list of servers to connect to ip:port,ip:port...
-//        private String connect;
-//        // maxElapsedTimeMs 最大重试时间
-//        private Integer maxElapsedTimeMs = 1000;
-//        // sleepMsBetweenRetries 每次重试的间隔时间
-//        private Integer sleepMsBetweenRetries = 4;
-//        // root 锁目录
-//        private String root = "/locks";
-//    }
 }

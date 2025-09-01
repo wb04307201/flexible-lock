@@ -50,18 +50,23 @@ public class LockAnnotationAspect {
 @Before("@annotation(locking)")
 public void before(JoinPoint joinPoint, Locking locking) {
     try {
-        // 获取方法签名
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-        // 根据Locking对象的别名获取锁对象
         ILock lock = getLock(locking.alias());
-        // 如果锁对象不为空，则尝试执行锁定逻辑
+
         if (lock == null) {
-            throw new LockRuntimeException(String.format("锁别名%s不存在！", locking.alias()));
+            String errorMsg = String.format("锁别名%s不存在！", locking.alias());
+            log.error("Lock not found: alias={}", locking.alias());
+            throw new LockRuntimeException(errorMsg);
         } else {
             tryLock(locking, lock, methodSignature, joinPoint.getTarget(), joinPoint.getArgs());
         }
     } catch (Exception e) {
-        throw new LockRuntimeException(e);
+        // 记录详细异常信息
+        log.error("获取锁时发生异常: alias={}, method={}",
+                locking.alias(),
+                joinPoint.getSignature().getName(),
+                e);
+        throw new LockRuntimeException("获取锁失败: " + e.getMessage(), e);
     }
 }
 
@@ -70,24 +75,23 @@ public void before(JoinPoint joinPoint, Locking locking) {
     // 在带有@Locking注解的方法执行后执行的方法
     @After("@annotation(locking)")
     public void after(JoinPoint joinPoint, Locking locking) {
-        // 获取方法签名
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-        // 根据Locking对象的别名获取锁对象
         ILock lock = getLock(locking.alias());
-        // 如果锁对象不为空，则解锁
+
         if (lock != null) {
             try {
-                // 获取当前线程id
                 Long threadId = Thread.currentThread().getId();
-                // 获取解锁的新key
                 String newKey = getNewKey(locking.alias(), locking.keys(), joinPoint.getTarget(), methodSignature.getMethod(), joinPoint.getArgs());
-                // 解锁
+                long startTime = System.currentTimeMillis();
+
                 lock.unLock(newKey);
-                // 打印日志
-                log.debug("LockAnnotationAspect thread:{} method{} alias:{} key:{} 解锁", threadId, methodSignature.getMethod().getName(), locking.alias(), newKey);
+
+                long duration = System.currentTimeMillis() - startTime;
+                log.debug("解锁成功: thread={} method={} alias={} key={} duration={}ms",
+                        threadId, methodSignature.getMethod().getName(), locking.alias(), newKey, duration);
             } catch (Exception e) {
-                // 记录解锁过程中的异常，避免影响主流程
-                log.warn("LockAnnotationAspect 解锁过程中发生异常 alias:{} method:{}", locking.alias(), methodSignature.getMethod().getName(), e);
+                log.warn("解锁过程中发生异常: alias={} method={}",
+                        locking.alias(), methodSignature.getMethod().getName(), e);
             }
         }
     }
@@ -190,14 +194,19 @@ public void before(JoinPoint joinPoint, Locking locking) {
         // 生成新的锁键
         String newKey = getNewKey(locking.alias(), locking.keys(), target, methodSignature.getMethod(), args);
         // 记录尝试加锁的日志
-        log.debug("LockAnnotationAspect thread:{} method {} alias:{} key:{} 尝试加锁", threadId, methodSignature.getMethod().getName(), locking.alias(), newKey);
+        log.debug("尝试加锁: thread={} method={} alias={} key={}",
+                threadId, methodSignature.getMethod().getName(), locking.alias(), newKey);
 
         // 尝试获取锁，根据配置的超时时间决定是否使用带超时的尝试方法
+        long startTime = System.currentTimeMillis();
         Boolean tryLock = locking.time() > 0 ? lock.tryLock(newKey, locking.time(), locking.unit()) : lock.tryLock(newKey);
+        long duration = System.currentTimeMillis() - startTime;
 
+
+        int count = 0;
+        long totalWaitTime = 0;
         // 如果获取锁失败，并且配置了重试次数，则进行重试
         if (Boolean.FALSE.equals(tryLock)) {
-            int count = 0;
             int retryCount = lock.getRetryCount();
 
             // 重试条件: retryCount > 0 且已重试次数小于最大重试次数，或者 retryCount < 0 (无限重试)
@@ -208,10 +217,11 @@ public void before(JoinPoint joinPoint, Locking locking) {
                 try {
                     // 使用指数退避策略计算等待时间
                     long waitTime = lock.calculateBackoffTime(count);
+                    totalWaitTime += waitTime;
 
                     // 记录重试日志
-                    log.debug("LockAnnotationAspect thread:{} method {} alias:{} key:{} 加锁失败，第{}次重试，等待{}ms",
-                            threadId, methodSignature.getMethod().getName(), locking.alias(), newKey, count, waitTime);
+                    log.debug("加锁失败，第{}次重试: thread={} method={} alias={} key={} waitTime={}ms",
+                            count, threadId, methodSignature.getMethod().getName(), locking.alias(), newKey, waitTime);
 
                     // 等待一段时间后重试
                     if (waitTime > 0) {
@@ -223,8 +233,9 @@ public void before(JoinPoint joinPoint, Locking locking) {
                 } catch (InterruptedException e) {
                     // 恢复中断状态
                     Thread.currentThread().interrupt();
-                    log.warn("LockAnnotationAspect thread:{} method {} alias:{} key:{} 第{}次重试时被中断",
-                            threadId, methodSignature.getMethod().getName(), locking.alias(), newKey, count);
+                    String errorMsg = String.format("获取锁过程中被中断: method=%s alias=%s key=%s retryCount=%d",
+                            methodSignature.getMethod().getName(), locking.alias(), newKey, count);
+                    log.warn(errorMsg);
                     throw new LockRuntimeException("获取锁过程中被中断", e);
                 }
 
@@ -238,13 +249,13 @@ public void before(JoinPoint joinPoint, Locking locking) {
 
         // 根据最终是否获取到锁，记录相应的日志
         if (Boolean.FALSE.equals(tryLock)) {
-            log.debug("LockAnnotationAspect thread:{} method {} alias:{} key:{} 加锁失败",
-                    threadId, methodSignature.getMethod().getName(), locking.alias(), newKey);
-            throw new LockRuntimeException(String.format("获取锁失败，method:%s alias:%s key:%s",
-                    methodSignature.getMethod().getName(), locking.alias(), newKey));
+            String errorMsg = String.format("获取锁失败: method=%s alias=%s key=%s totalRetryTime=%dms retryCount=%d",
+                    methodSignature.getMethod().getName(), locking.alias(), newKey, totalWaitTime, count);
+            log.debug(errorMsg);
+            throw new LockRuntimeException(errorMsg);
         } else {
-            log.debug("LockAnnotationAspect thread:{} method {} alias:{} key:{} 加锁成功",
-                    threadId, methodSignature.getMethod().getName(), locking.alias(), newKey);
+            log.debug("加锁成功: thread={} method={} alias={} key={} duration={}ms",
+                    threadId, methodSignature.getMethod().getName(), locking.alias(), newKey, duration);
         }
     }
 

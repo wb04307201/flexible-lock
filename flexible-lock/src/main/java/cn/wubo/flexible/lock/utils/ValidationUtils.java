@@ -4,6 +4,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 
+import java.util.Map;
 import java.util.Set;
 
 
@@ -26,6 +27,20 @@ public class ValidationUtils {
         // 如果存在违反约束的情况，则抛出异常
         if (!violations.isEmpty()) {
             throw new ConstraintViolationException(violations);
+        }
+    }
+
+    public static void validateStringAttribute(Map<String, Object> attributes, String key, String errorMessage) {
+        Object value = attributes.get(key);
+        if (!(value instanceof String str) || str.isEmpty()) {
+            throw new IllegalArgumentException(errorMessage);
+        }
+    }
+
+    public static void  validateStringArrayAttribute(Map<String, Object> attributes, String key, String errorMessage) {
+        Object value = attributes.get(key);
+        if (!(value instanceof String[] strs) || strs.length == 0) {
+            throw new IllegalArgumentException(errorMessage);
         }
     }
 

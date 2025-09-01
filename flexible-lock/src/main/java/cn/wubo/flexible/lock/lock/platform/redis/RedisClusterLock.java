@@ -4,6 +4,7 @@ import cn.wubo.flexible.lock.exception.LockRuntimeException;
 import cn.wubo.flexible.lock.lock.platform.AbstractLock;
 import cn.wubo.flexible.lock.propertes.LockPlatformProperties;
 import cn.wubo.flexible.lock.retry.IRetryStrategy;
+import cn.wubo.flexible.lock.utils.ValidationUtils;
 import jakarta.validation.Validator;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -32,15 +33,9 @@ public class RedisClusterLock extends AbstractLock {
 
         Map<String, Object> attributes = properties.getAttributes();
 
-        Object nodes = attributes.get("nodes");
-        if (nodes == null || !(nodes instanceof String[] strs) || strs.length > 0) {
-            throw new LockRuntimeException("RedisClusterLock nodes is null");
-        }
+        ValidationUtils.validateStringArrayAttribute(attributes, "nodes", "RedisClusterLock nodes is null");
+        ValidationUtils.validateStringAttribute(attributes, "password", "RedisClusterLock password is null");
 
-        Object password = attributes.get("password");
-        if (password == null || !(password instanceof String str) || str.isEmpty()) {
-            throw new LockRuntimeException("RedisClusterLock password is null");
-        }
     }
 
     @Override

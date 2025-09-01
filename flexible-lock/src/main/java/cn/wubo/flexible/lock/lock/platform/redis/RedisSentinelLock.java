@@ -4,6 +4,7 @@ import cn.wubo.flexible.lock.exception.LockRuntimeException;
 import cn.wubo.flexible.lock.lock.platform.AbstractLock;
 import cn.wubo.flexible.lock.propertes.LockPlatformProperties;
 import cn.wubo.flexible.lock.retry.IRetryStrategy;
+import cn.wubo.flexible.lock.utils.ValidationUtils;
 import jakarta.validation.Validator;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -34,22 +35,11 @@ public class RedisSentinelLock extends AbstractLock {
 
         Map<String, Object> attributes = properties.getAttributes();
 
-        Object nodes = attributes.get("nodes");
-        if (nodes == null || !(nodes instanceof String[] strs) || strs.length > 0) {
-            throw new LockRuntimeException("RedisSentinelLock nodes is null");
-        }
-
-        Object password = attributes.get("password");
-        if (password == null || !(password instanceof String str2) || str2.isEmpty()) {
-            throw new LockRuntimeException("RedisSentinelLock password is null");
-        }
+        ValidationUtils.validateStringAttribute( attributes,"nodes","RedisSentinelLock nodes is null");
+        ValidationUtils.validateStringAttribute( attributes,"password","RedisSentinelLock password is null");
+        ValidationUtils.validateStringAttribute( attributes,"masterName","RedisSentinelLock masterName is null");
 
         attributes.putIfAbsent("database", 0);
-
-        Object masterName = attributes.get("masterName");
-        if (masterName == null || !(masterName instanceof String str3) || str3.isEmpty()) {
-            throw new LockRuntimeException("RedisSentinelLock masterName is null");
-        }
     }
 
     @Override

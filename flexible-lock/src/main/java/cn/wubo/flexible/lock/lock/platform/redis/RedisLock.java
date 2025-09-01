@@ -4,6 +4,7 @@ import cn.wubo.flexible.lock.exception.LockRuntimeException;
 import cn.wubo.flexible.lock.lock.platform.AbstractLock;
 import cn.wubo.flexible.lock.propertes.LockPlatformProperties;
 import cn.wubo.flexible.lock.retry.IRetryStrategy;
+import cn.wubo.flexible.lock.utils.ValidationUtils;
 import jakarta.validation.Validator;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -33,15 +34,8 @@ public class RedisLock extends AbstractLock {
 
         Map<String, Object> attributes = properties.getAttributes();
 
-        Object address = attributes.get("address");
-        if (address == null || !(address instanceof String str1) || str1.isEmpty()) {
-            throw new LockRuntimeException("RedisLock password is null");
-        }
-
-        Object password = attributes.get("password");
-        if (password == null || !(password instanceof String str2) || str2.isEmpty()) {
-            throw new LockRuntimeException("RedisLock password is null");
-        }
+        ValidationUtils.validateStringAttribute( attributes,"address","RedisLock password is null");
+        ValidationUtils.validateStringAttribute( attributes,"password","RedisLock password is null");
 
         attributes.putIfAbsent("database", 0);
     }

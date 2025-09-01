@@ -30,14 +30,20 @@ public class ValidationUtils {
         }
     }
 
-    public static void validateStringAttribute(Map<String, Object> attributes, String key, String errorMessage) {
-        Object value = attributes.get(key);
-        if (!(value instanceof String str) || str.isEmpty()) {
+    public static void validateRequiredAttribute(Map<String, Object> attributes, String key, String errorMessage) {
+        if (!attributes.containsKey(key) || attributes.get(key) == null) {
             throw new IllegalArgumentException(errorMessage);
         }
     }
 
-    public static void  validateStringArrayAttribute(Map<String, Object> attributes, String key, String errorMessage) {
+    public static void validateStringAttributeNotEmpty(Map<String, Object> attributes, String key, String errorMessage) {
+        Object value = attributes.get(key);
+        if (!(value instanceof String str) || str.trim().isEmpty()) {
+            throw new IllegalArgumentException(errorMessage);
+        }
+    }
+
+    public static void validateStringArrayAttributeNotEmpty(Map<String, Object> attributes, String key, String errorMessage) {
         Object value = attributes.get(key);
         if (!(value instanceof String[] strs) || strs.length == 0) {
             throw new IllegalArgumentException(errorMessage);

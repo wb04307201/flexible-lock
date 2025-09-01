@@ -16,7 +16,15 @@ public class RandomRetryStrategy implements IRetryStrategy {
     public long calculateWaitTime(long baseWaitTime, int retryCount) {
         // 在基础等待时间的基础上增加随机因素
         long maxWait = Math.min(baseWaitTime * retryCount, MAX_WAIT_TIME);
-        return random.nextLong() % maxWait + baseWaitTime;
+
+        // 如果 maxWait 不大于0，则直接返回基础等待时间
+        if (maxWait <= 0) {
+            return baseWaitTime;
+        }
+
+        // 生成 0 到 maxWait-1 之间的随机数，确保结果为正数
+        long randomValue = Math.abs(random.nextLong()) % maxWait;
+        return randomValue + baseWaitTime;
     }
 
     @Override

@@ -30,13 +30,9 @@ public class RedisClusterLock extends AbstractLock {
     @Override
     public void validate() {
         super.validate();
-
-        Map<String, Object> attributes = properties.getAttributes();
-
-        ValidationUtils.validateStringArrayAttribute(attributes, "nodes", "RedisClusterLock nodes is null");
-        ValidationUtils.validateStringAttribute(attributes, "password", "RedisClusterLock password is null");
-
-    }
+        validateStringArrayAttributeNotEmpty("nodes", "Redis Cluster nodes are required");
+        validateStringAttributeNotEmpty("password", "Redis Cluster password is required");
+}
 
     @Override
     public Boolean tryLock(String key) {

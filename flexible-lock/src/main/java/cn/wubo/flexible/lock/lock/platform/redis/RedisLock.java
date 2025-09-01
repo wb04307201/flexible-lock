@@ -31,13 +31,10 @@ public class RedisLock extends AbstractLock {
     @Override
     public void validate() {
         super.validate();
+        validateStringAttributeNotEmpty("address", "Redis address is required");
+        validateStringAttributeNotEmpty("password", "Redis password is required");
+        properties.getAttributes().putIfAbsent("database", 0);
 
-        Map<String, Object> attributes = properties.getAttributes();
-
-        ValidationUtils.validateStringAttribute( attributes,"address","RedisLock password is null");
-        ValidationUtils.validateStringAttribute( attributes,"password","RedisLock password is null");
-
-        attributes.putIfAbsent("database", 0);
     }
 
     @Override

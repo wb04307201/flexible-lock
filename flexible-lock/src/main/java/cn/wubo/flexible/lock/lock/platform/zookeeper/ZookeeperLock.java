@@ -37,15 +37,11 @@ public class ZookeeperLock extends AbstractLock {
     @Override
     public void validate() {
         super.validate();
-
-        Map<String, Object> attributes = properties.getAttributes();
-
-        ValidationUtils.validateStringAttribute( attributes,"connect","ZookeeperLock password is null");
-
-        attributes.putIfAbsent("maxElapsedTimeMs", 1000);
-        attributes.putIfAbsent("sleepMsBetweenRetries", 4);
-        attributes.putIfAbsent("root", "/locks");
-    }
+        validateStringAttributeNotEmpty("connect", "Zookeeper connection string is required");
+        properties.getAttributes().putIfAbsent("maxElapsedTimeMs", 1000);
+        properties.getAttributes().putIfAbsent("sleepMsBetweenRetries", 4);
+        properties.getAttributes().putIfAbsent("root", "/locks");
+}
 
     @Override
     public Boolean tryLock(String key) {

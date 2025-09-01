@@ -32,15 +32,10 @@ public class RedisSentinelLock extends AbstractLock {
     @Override
     public void validate() {
         super.validate();
-
-        Map<String, Object> attributes = properties.getAttributes();
-
-        ValidationUtils.validateStringAttribute( attributes,"nodes","RedisSentinelLock nodes is null");
-        ValidationUtils.validateStringAttribute( attributes,"password","RedisSentinelLock password is null");
-        ValidationUtils.validateStringAttribute( attributes,"masterName","RedisSentinelLock masterName is null");
-
-        attributes.putIfAbsent("database", 0);
-    }
+        validateStringAttributeNotEmpty("masterName", "Redis Sentinel masterName is required");
+        validateStringAttributeNotEmpty("password", "Redis Sentinel password is required");
+        properties.getAttributes().putIfAbsent("database", 0);
+}
 
     @Override
     public Boolean tryLock(String key) {

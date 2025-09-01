@@ -43,4 +43,16 @@ public abstract class AbstractLock implements ILock {
     public long calculateBackoffTime(int retryCount) {
         return retryStrategy.calculateWaitTime(getWaitTime(), retryCount);
     }
+
+    protected void validateRequiredStringAttribute(String attributeName, String errorMessage) {
+        ValidationUtils.validateRequiredAttribute(properties.getAttributes(), attributeName, errorMessage);
+    }
+
+    protected void validateStringAttributeNotEmpty(String attributeName, String errorMessage) {
+        ValidationUtils.validateStringAttributeNotEmpty(properties.getAttributes(), attributeName, errorMessage);
+    }
+
+    protected void validateStringArrayAttributeNotEmpty(String attributeName, String errorMessage) {
+        ValidationUtils.validateStringArrayAttributeNotEmpty(properties.getAttributes(), attributeName, errorMessage);
+    }
 }

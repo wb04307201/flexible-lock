@@ -28,5 +28,5 @@ public class LockPlatformProperties {
     // 固定时间间隔重试 fixed, 指数退避重试 exponential, 随机退避重试 random
     private String retryStrategy = "fixed";
 
-    Map<String, Object> attributes = new HashMap<>();
+    private Map<String, Object> attributes = new HashMap<>();
 }

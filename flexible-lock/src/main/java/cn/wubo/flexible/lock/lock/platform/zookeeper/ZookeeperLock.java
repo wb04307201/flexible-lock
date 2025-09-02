@@ -4,6 +4,7 @@ import cn.wubo.flexible.lock.exception.LockRuntimeException;
 import cn.wubo.flexible.lock.lock.platform.AbstractLock;
 import cn.wubo.flexible.lock.propertes.LockPlatformProperties;
 import cn.wubo.flexible.lock.retry.IRetryStrategy;
+import cn.wubo.flexible.lock.utils.ValidationUtils;
 import jakarta.validation.Validator;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -36,18 +37,10 @@ public class ZookeeperLock extends AbstractLock {
     @Override
     public void validate() {
         super.validate();
-
-        Map<String, Object> attributes = properties.getAttributes();
-
-        Object connect = attributes.get("connect");
-        if (connect == null || !(connect instanceof String str1) || str1.isEmpty()) {
-            throw new LockRuntimeException("ZookeeperLock password is null");
-        }
-
-        attributes.putIfAbsent("maxElapsedTimeMs", 1000);
-        attributes.putIfAbsent("sleepMsBetweenRetries", 4);
-        attributes.putIfAbsent("root", "/locks");
-    }
+        properties.getAttributes().putIfAbsent("maxElapsedTimeMs", 1000);
+        properties.getAttributes().putIfAbsent("sleepMsBetweenRetries", 4);
+        properties.getAttributes().putIfAbsent("root", "/locks");
+}
 
     @Override
     public Boolean tryLock(String key) {

@@ -7,7 +7,7 @@ import jakarta.validation.Validator;
 
 public interface IFactory {
 
-    Boolean supportsPlatform(String locktype);
+    Boolean supports(String locktype);
 
     ILock create(LockPlatformProperties properties, IRetryStrategy retryStrategy, Validator validator);
 }

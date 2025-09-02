@@ -43,7 +43,7 @@
 <dependency>
     <groupId>com.gitee.wb04307201.flexible-lock</groupId>
     <artifactId>flexible-lock-spring-boot-starter</artifactId>
-    <version>1.1.4</version>
+    <version>1.1.5</version>
 </dependency>
 ```
 
@@ -70,31 +70,67 @@ lock:
         root: "/locks"
 ```
 
-### 锁类型配置参数
+## 配置说明
 
-1. **Redis单点模式** (`locktype: redis`):
-    - `address`: Redis地址，如 "redis://127.0.0.1:6379"
-    - `password`: Redis密码
-    - `database`: 数据库索引，默认0
+### LockPlatformProperties
 
-2. **Redis集群模式** (`locktype: redis-cluster`):
-    - `nodes`: 节点地址数组
-    - `password`: Redis密码
+| 属性名           | 类型                  | 默认值          | 说明                                                              |
+|---------------|---------------------|--------------|-----------------------------------------------------------------|
+| alias         | String              | -            | 锁的别名，必须唯一                                                       |
+| locktype      | String              | "standalone" | 锁类型：redis, redis-cluster, redis-sentinel, zookeeper, standalone |
+| enableLock    | Boolean             | true         | 是否启用锁                                                           |
+| retryCount    | Integer             | 0            | 重试次数，-1表示无限重试                                                   |
+| waitTime      | Long                | 3000         | 基础等待时间（毫秒）                                                      |
+| retryStrategy | String              | "fixed"      | 重试策略：fixed, exponential, random                                 |
+| attributes    | Map<String, Object> | -            | 各种锁类型的具体配置参数                                                    |
 
-3. **Redis哨兵模式** (`locktype: redis-sentinel`):
-    - `nodes`: 哨兵节点地址数组
-    - `password`: Redis密码
-    - `database`: 数据库索引，默认0
-    - `masterName`: 主节点名称
+### 不同锁类型的 attributes 配置
 
-4. **Zookeeper** (`locktype: zookeeper`):
-    - `connect`: Zookeeper连接地址
-    - `root`: 锁目录，默认"/locks"
-    - `maxElapsedTimeMs`: 最大重试时间，默认1000ms
-    - `sleepMsBetweenRetries`: 重试间隔时间，默认4ms
+#### Redis 单点模式
+```yaml
+attributes:
+  address: "redis://127.0.0.1:6379"  # Redis 地址
+  password: ""                       # Redis 密码
+  database: 0                        # 数据库索引
+```
 
-5. **本地锁** (`locktype: standalone`):
-    - 无需额外配置
+
+#### Redis 集群模式
+```yaml
+attributes:
+  nodes:                             # Redis 集群节点列表
+    - "redis://127.0.0.1:7000"
+    - "redis://127.0.0.1:7001"
+  password: ""                       # Redis 密码
+```
+
+
+#### Redis 哨兵模式
+```yaml
+attributes:
+  nodes:                             # Redis 哨兵节点列表
+    - "redis://127.0.0.1:26379"
+    - "redis://127.0.0.1:26380"
+  password: ""                       # Redis 密码
+  masterName: "mymaster"             # 主节点名称
+  database: 0                        # 数据库索引
+```
+
+
+#### Zookeeper 模式
+```yaml
+attributes:
+  connect: "127.0.0.1:2181"          # Zookeeper 连接字符串
+  maxElapsedTimeMs: 1000             # 最大等待时间（毫秒）
+  sleepMsBetweenRetries: 4           # 重试间隔（毫秒）
+  root: "/locks"                     # 锁的根路径
+```
+
+
+#### 单机模式
+```yaml
+# 单机模式不需要额外的 attributes 配置
+```
 
 ## 使用方法
 
@@ -115,10 +151,12 @@ public class BusinessService {
 
 ### 注解参数说明
 
-- [alias](flexible-lock\src\main\java\cn\wubo\flexible\lock\annotation\Locking.java#L13-L13): 锁的别名，对应配置中的alias
-- [keys](flexible-lock\src\main\java\cn\wubo\flexible\lock\annotation\Locking.java#L19-L19): 锁的key，支持SpEL表达式，可以引用方法参数
-- [time](flexible-lock\src\main\java\cn\wubo\flexible\lock\annotation\Locking.java#L21-L21): 超时时间，默认-1(不超时)
-- [unit](flexible-lock\src\main\java\cn\wubo\flexible\lock\annotation\Locking.java#L23-L23): 时间单位，默认SECONDS
+| 属性    | 类型       | 默认值     | 描述                 |
+|-------|----------|---------|--------------------|
+| alias | String   | -       | 锁的别名               |
+| keys  | String[] | {""}    | 锁的 key，支持 SpEL 表达式 |
+| time  | long     | -1      | 锁的超时时间             |
+| unit  | TimeUnit | SECONDS | 时间单位               |
 
 ### SpEL表达式示例
 
@@ -136,9 +174,9 @@ public void processWithStaticKey(String param) {
 
 ## 重试策略
 
-1. **Fixed(固定间隔)**: 每次重试间隔固定时间
-2. **Exponential(指数退避)**: 重试间隔按指数增长
-3. **Random(随机退避)**: 在基础等待时间基础上增加随机因素
+1. **Fixed（固定间隔）**：每次重试间隔固定为基础等待时间
+2. **Exponential（指数退避）**：重试间隔按指数增长，最大不超过30秒
+3. **Random（随机退避）**：在基础等待时间基础上增加随机因素
 
 ## 自定义扩展
 
@@ -156,7 +194,7 @@ public void processWithStaticKey(String param) {
 
 ## 注意事项
 
-1. 确保配置的锁别名与注解中的alias一致
-2. 合理设置重试次数和等待时间，避免资源浪费
-3. 根据业务场景选择合适的锁类型和重试策略
-4. 在集群环境中使用分布式锁实现(zookeeper, redis等)
+1. 确保配置的 alias 唯一且在使用时正确引用
+2. 根据实际业务场景选择合适的锁类型和重试策略
+3. 合理设置 retryCount 和 waitTime，避免资源浪费或业务阻塞
+4. 使用 SPEL 表达式时确保参数名称正确

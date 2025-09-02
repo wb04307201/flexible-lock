@@ -52,12 +52,12 @@ public class LockConfiguration {
                     IRetryStrategy rs = retryStrategies.stream()
                             .filter(retryStrategy -> retryStrategy.supports(properties.getRetryStrategy()))
                             .findAny()
-                            .orElseThrow(() -> new LockRuntimeException("Unsupported retry strategy: " + properties.getRetryStrategy()));
+                            .orElseThrow(() -> new IllegalArgumentException("Unsupported retry strategy: " + properties.getRetryStrategy()));
 
                    return factories.stream()
-                            .filter(factory -> factory.supportsPlatform(properties.getLocktype()))
+                            .filter(factory -> factory.supports(properties.getLocktype()))
                             .findAny()
-                            .orElseThrow(() -> new LockRuntimeException("Unsupported lock platform: " + properties.getLocktype()))
+                            .orElseThrow(() -> new IllegalArgumentException("Unsupported lock type: " + properties.getLocktype()))
                             .create(properties, rs, validator);
 
                 })

@@ -4,6 +4,7 @@ import cn.wubo.flexible.lock.propertes.LockPlatformProperties;
 import jakarta.validation.Constraint;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import jakarta.validation.Payload;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -18,6 +19,12 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Constraint(validatedBy = LockPlatformPropertiesValidator.Validator.class)
 @Documented
 public @interface LockPlatformPropertiesValidator {
+    String message() default "Invalid lock platform properties";
+
+    Class<?>[] groups() default {};
+
+    Class<? extends Payload>[] payload() default {};
+
     class Validator implements ConstraintValidator<LockPlatformPropertiesValidator, LockPlatformProperties> {
         @Override
         public boolean isValid(LockPlatformProperties properties, ConstraintValidatorContext context) {

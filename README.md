@@ -151,10 +151,12 @@ public class BusinessService {
 
 ### 注解参数说明
 
-- [alias](flexible-lock\src\main\java\cn\wubo\flexible\lock\annotation\Locking.java#L13-L13): 锁的别名，对应配置中的alias
-- [keys](flexible-lock\src\main\java\cn\wubo\flexible\lock\annotation\Locking.java#L19-L19): 锁的key，支持SpEL表达式，可以引用方法参数
-- [time](flexible-lock\src\main\java\cn\wubo\flexible\lock\annotation\Locking.java#L21-L21): 超时时间，默认-1(不超时)
-- [unit](flexible-lock\src\main\java\cn\wubo\flexible\lock\annotation\Locking.java#L23-L23): 时间单位，默认SECONDS
+| 属性    | 类型       | 默认值     | 描述                 |
+|-------|----------|---------|--------------------|
+| alias | String   | -       | 锁的别名               |
+| keys  | String[] | {""}    | 锁的 key，支持 SpEL 表达式 |
+| time  | long     | -1      | 锁的超时时间             |
+| unit  | TimeUnit | SECONDS | 时间单位               |
 
 ### SpEL表达式示例
 

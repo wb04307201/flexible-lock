@@ -2,11 +2,9 @@ package cn.wubo.flexible.lock.propertes;
 
 import cn.wubo.flexible.lock.annotation.LockPlatformPropertiesValidator;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Data

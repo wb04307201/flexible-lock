@@ -18,8 +18,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Constraint(validatedBy = LockPlatformPropertiesValidator.Validator.class)
 @Documented
 public @interface LockPlatformPropertiesValidator {
-    String message() default "Invalid lock platform properties";
-
     class Validator implements ConstraintValidator<LockPlatformPropertiesValidator, LockPlatformProperties> {
         @Override
         public boolean isValid(LockPlatformProperties properties, ConstraintValidatorContext context) {

@@ -45,7 +45,7 @@ public class LockConfiguration {
     }
 
     @Bean
-    public List<ILock> locks(LockProperties lockProperties, List<IFactory> factories, List<IRetryStrategy> retryStrategies, Validator validator) {
+    public List<ILock> locks(LockProperties lockProperties, List<IFactory> factories, List<IRetryStrategy> retryStrategies) {
         // @formatter:off
         return lockProperties.getProps().stream()
                 .map(properties -> {
@@ -58,7 +58,7 @@ public class LockConfiguration {
                             .filter(factory -> factory.supports(properties.getLocktype()))
                             .findAny()
                             .orElseThrow(() -> new IllegalArgumentException("Unsupported lock type: " + properties.getLocktype()))
-                            .create(properties, rs, validator);
+                            .create(properties, rs);
 
                 })
                 .collect(Collectors.toList());

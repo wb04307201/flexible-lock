@@ -5,7 +5,6 @@ import cn.wubo.flexible.lock.lock.ILock;
 import cn.wubo.flexible.lock.lock.platform.zookeeper.ZookeeperLock;
 import cn.wubo.flexible.lock.propertes.LockPlatformProperties;
 import cn.wubo.flexible.lock.retry.IRetryStrategy;
-import jakarta.validation.Validator;
 
 public class ZookeeperFactory implements IFactory {
     @Override
@@ -14,7 +13,7 @@ public class ZookeeperFactory implements IFactory {
     }
 
     @Override
-    public ILock create(LockPlatformProperties properties, IRetryStrategy retryStrategy, Validator validator) {
-        return new ZookeeperLock(properties, validator, retryStrategy);
+    public ILock create(LockPlatformProperties properties, IRetryStrategy retryStrategy) {
+        return new ZookeeperLock(properties, retryStrategy);
     }
 }

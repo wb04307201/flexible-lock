@@ -4,34 +4,26 @@ import cn.wubo.flexible.lock.exception.LockRuntimeException;
 import cn.wubo.flexible.lock.lock.platform.AbstractLock;
 import cn.wubo.flexible.lock.propertes.LockPlatformProperties;
 import cn.wubo.flexible.lock.retry.IRetryStrategy;
-import cn.wubo.flexible.lock.utils.ValidationUtils;
-import jakarta.validation.Validator;
+import jakarta.validation.Valid;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class RedisLock extends AbstractLock {
 
     private RedissonClient client;
 
-    public RedisLock(LockPlatformProperties properties, Validator validator, IRetryStrategy retryStrategy) {
-        super(properties, validator, retryStrategy);
+    public RedisLock(@Valid LockPlatformProperties properties, IRetryStrategy retryStrategy) {
+        super(properties, retryStrategy);
+        properties.getAttributes().putIfAbsent("database", 0);
         Config config = new Config();
         config.useSingleServer()
                 .setAddress((String) properties.getAttributes().get("address"))
                 .setPassword((String) properties.getAttributes().get("password"))
                 .setDatabase((Integer) properties.getAttributes().get("database"));
         this.client = Redisson.create(config);
-    }
-
-
-    @Override
-    public void validate() {
-        super.validate();
-        properties.getAttributes().putIfAbsent("database", 0);
     }
 
     @Override

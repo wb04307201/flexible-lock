@@ -9,5 +9,5 @@ public interface IFactory {
 
     Boolean supports(String locktype);
 
-    ILock create(LockPlatformProperties properties, IRetryStrategy retryStrategy, Validator validator);
+    ILock create(LockPlatformProperties properties, IRetryStrategy retryStrategy);
 }

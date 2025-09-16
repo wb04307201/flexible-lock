@@ -15,6 +15,6 @@ public class StandaloneFactory implements IFactory {
 
     @Override
     public ILock create(LockPlatformProperties properties, IRetryStrategy retryStrategy, Validator validator) {
-        return new StandaloneLock(properties, validator, retryStrategy);
+        return new StandaloneLock(properties, retryStrategy);
     }
 }

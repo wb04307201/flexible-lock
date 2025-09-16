@@ -4,7 +4,7 @@ import cn.wubo.flexible.lock.lock.platform.AbstractLock;
 import cn.wubo.flexible.lock.propertes.LockPlatformProperties;
 import cn.wubo.flexible.lock.retry.IRetryStrategy;
 import cn.wubo.lock.CHMRLock;
-import jakarta.validation.Validator;
+import jakarta.validation.Valid;
 
 import java.util.concurrent.TimeUnit;
 
@@ -12,7 +12,7 @@ public class StandaloneLock extends AbstractLock {
 
     private final CHMRLock client;
 
-    public StandaloneLock(LockPlatformProperties properties, Validator validator, IRetryStrategy retryStrategy) {
+    public StandaloneLock(@Valid LockPlatformProperties properties, IRetryStrategy retryStrategy) {
         super(properties, retryStrategy);
         this.client = new CHMRLock();
     }

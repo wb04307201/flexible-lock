@@ -21,9 +21,6 @@ import static org.mockito.Mockito.when;
 public class RedisLockTest {
 
     @Mock
-    private Validator mockValidator;
-
-    @Mock
     private IRetryStrategy mockRetryStrategy;
 
     private LockPlatformProperties properties;
@@ -37,14 +34,14 @@ public class RedisLockTest {
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("address", "redis://localhost:6379");
-        attributes.put("password", "testPassword");
+        attributes.put("password", "mypassword");
         attributes.put("database", 0);
         properties.setAttributes(attributes);
     }
 
     @Test
     void testSupportsAlias() {
-        RedisLock redisLock = new RedisLock(properties, mockRetryStrategy);
+        RedisLock redisLock = new RedisLock(properties,mockRetryStrategy);
         assertTrue(redisLock.supportsAlias("testRedis"));
         assertFalse(redisLock.supportsAlias("wrongAlias"));
     }

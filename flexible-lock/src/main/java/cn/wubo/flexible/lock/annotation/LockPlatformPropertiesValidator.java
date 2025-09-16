@@ -123,14 +123,14 @@ public @interface LockPlatformPropertiesValidator {
                 return false;
             }
 
-            if (ValidationUtils.validIntegerTypeAndRangeAttribute(attributes, "maxElapsedTimeMs", integer -> integer > 0)) {
+            if (ValidationUtils.validIntegerTypeAndRangeAttribute(attributes, "maxElapsedTimeMs", integer -> integer <= 0)) {
                 context.disableDefaultConstraintViolation();
                 context.buildConstraintViolationWithTemplate("Zookeeper maxElapsedTimeMs type is Integer and value > 0")
                         .addPropertyNode("attributes[maxElapsedTimeMs]").addConstraintViolation();
                 return false;
             }
 
-            if (ValidationUtils.validIntegerTypeAndRangeAttribute(attributes, "sleepMsBetweenRetries", integer -> integer > 0)) {
+            if (ValidationUtils.validIntegerTypeAndRangeAttribute(attributes, "sleepMsBetweenRetries", integer -> integer <= 0)) {
                 context.disableDefaultConstraintViolation();
                 context.buildConstraintViolationWithTemplate("Zookeeper sleepMsBetweenRetries type is Integer and value > 0")
                         .addPropertyNode("attributes[sleepMsBetweenRetries]").addConstraintViolation();

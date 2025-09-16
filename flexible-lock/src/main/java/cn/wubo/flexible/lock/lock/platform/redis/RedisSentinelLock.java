@@ -4,21 +4,19 @@ import cn.wubo.flexible.lock.exception.LockRuntimeException;
 import cn.wubo.flexible.lock.lock.platform.AbstractLock;
 import cn.wubo.flexible.lock.propertes.LockPlatformProperties;
 import cn.wubo.flexible.lock.retry.IRetryStrategy;
-import cn.wubo.flexible.lock.utils.ValidationUtils;
-import jakarta.validation.Validator;
+import jakarta.validation.Valid;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class RedisSentinelLock extends AbstractLock {
 
     private RedissonClient client;
 
-    public RedisSentinelLock(LockPlatformProperties properties, Validator validator, IRetryStrategy retryStrategy) {
-        super(properties, validator, retryStrategy);
+    public RedisSentinelLock(@Valid LockPlatformProperties properties, IRetryStrategy retryStrategy) {
+        super(properties, retryStrategy);
         Config config = new Config();
         config.useSentinelServers()
                 .addSentinelAddress((String[]) properties.getAttributes().get("nodes"))
@@ -26,13 +24,6 @@ public class RedisSentinelLock extends AbstractLock {
                 .setDatabase((Integer) properties.getAttributes().get("database"))
                 .setMasterName((String) properties.getAttributes().get("masterName"));
         this.client = Redisson.create(config);
-    }
-
-
-    @Override
-    public void validate() {
-        super.validate();
-        properties.getAttributes().putIfAbsent("database", 0);
     }
 
     @Override

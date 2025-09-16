@@ -15,6 +15,6 @@ public class RedisSentinelFactory implements IFactory {
 
     @Override
     public ILock create(LockPlatformProperties properties, IRetryStrategy retryStrategy, Validator validator) {
-        return new RedisSentinelLock(properties, validator, retryStrategy);
+        return new RedisSentinelLock(properties, retryStrategy);
     }
 }

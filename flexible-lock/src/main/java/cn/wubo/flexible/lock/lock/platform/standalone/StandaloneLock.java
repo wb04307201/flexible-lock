@@ -13,7 +13,7 @@ public class StandaloneLock extends AbstractLock {
     private final CHMRLock client;
 
     public StandaloneLock(LockPlatformProperties properties, Validator validator, IRetryStrategy retryStrategy) {
-        super(properties, validator, retryStrategy);
+        super(properties, retryStrategy);
         this.client = new CHMRLock();
     }
 

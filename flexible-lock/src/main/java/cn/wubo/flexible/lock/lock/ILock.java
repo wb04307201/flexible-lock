@@ -6,8 +6,6 @@ public interface ILock {
 
     Boolean supportsAlias(String alias);
 
-    void validate();
-
     /**
      * 尝试对给定的键进行加锁操作。
      *

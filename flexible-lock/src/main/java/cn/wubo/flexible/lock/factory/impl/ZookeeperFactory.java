@@ -15,6 +15,6 @@ public class ZookeeperFactory implements IFactory {
 
     @Override
     public ILock create(LockPlatformProperties properties, IRetryStrategy retryStrategy, Validator validator) {
-        return new ZookeeperLock(properties, validator, retryStrategy);
+        return new ZookeeperLock(properties, retryStrategy);
     }
 }

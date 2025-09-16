@@ -15,6 +15,6 @@ public class RedisClusterFactory implements IFactory {
 
     @Override
     public ILock create(LockPlatformProperties properties , IRetryStrategy retryStrategy, Validator validator) {
-        return new RedisClusterLock(properties, validator, retryStrategy);
+        return new RedisClusterLock(properties, retryStrategy);
     }
 }

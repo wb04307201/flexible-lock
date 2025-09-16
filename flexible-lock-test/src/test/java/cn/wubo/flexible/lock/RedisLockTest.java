@@ -44,7 +44,7 @@ public class RedisLockTest {
 
     @Test
     void testSupportsAlias() {
-        RedisLock redisLock = new RedisLock(properties, mockValidator, mockRetryStrategy);
+        RedisLock redisLock = new RedisLock(properties, mockRetryStrategy);
         assertTrue(redisLock.supportsAlias("testRedis"));
         assertFalse(redisLock.supportsAlias("wrongAlias"));
     }
@@ -52,21 +52,21 @@ public class RedisLockTest {
     @Test
     void testGetRetryCount() {
         properties.setRetryCount(5);
-        RedisLock redisLock = new RedisLock(properties, mockValidator, mockRetryStrategy);
+        RedisLock redisLock = new RedisLock(properties, mockRetryStrategy);
         assertEquals(5, redisLock.getRetryCount());
     }
 
     @Test
     void testGetWaitTime() {
         properties.setWaitTime(5000L);
-        RedisLock redisLock = new RedisLock(properties, mockValidator, mockRetryStrategy);
+        RedisLock redisLock = new RedisLock(properties, mockRetryStrategy);
         assertEquals(5000L, redisLock.getWaitTime());
     }
 
     @Test
     void testCalculateBackoffTime() {
         when(mockRetryStrategy.calculateWaitTime(anyLong(), anyInt())).thenReturn(1000L);
-        RedisLock redisLock = new RedisLock(properties, mockValidator, mockRetryStrategy);
+        RedisLock redisLock = new RedisLock(properties, mockRetryStrategy);
         long result = redisLock.calculateBackoffTime(3);
         assertEquals(1000L, result);
         verify(mockRetryStrategy).calculateWaitTime(3000L, 3);

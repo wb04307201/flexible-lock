@@ -1,6 +1,7 @@
 package cn.wubo.flexible.lock.annotation;
 
 import cn.wubo.flexible.lock.propertes.LockPlatformProperties;
+import cn.wubo.flexible.lock.utils.ValidationUtils;
 import jakarta.validation.Constraint;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
@@ -10,6 +11,7 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -35,35 +37,35 @@ public @interface LockPlatformPropertiesValidator {
             String lockType = properties.getLocktype();
             Map<String, Object> attributes = properties.getAttributes();
 
-            switch (lockType) {
-                case "redis":
-                    return validateRedisProperties(attributes, context);
-                case "redis-cluster":
-                    return validateRedisClusterProperties(attributes, context);
-                case "redis-sentinel":
-                    return validateRedisSentinelProperties(attributes, context);
-                case "zookeeper":
-                    return validateZookeeperProperties(attributes, context);
-                case "standalone":
-                    return validateStandaloneProperties(attributes, context);
-                default:
-                    return true; // Unknown lock type, let other validators handle
-            }
+            return switch (lockType) {
+                case "redis" -> validateRedisProperties(attributes, context);
+                case "redis-cluster" -> validateRedisClusterProperties(attributes, context);
+                case "redis-sentinel" -> validateRedisSentinelProperties(attributes, context);
+                case "zookeeper" -> validateZookeeperProperties(attributes, context);
+                case "standalone" -> validateStandaloneProperties(attributes, context);
+                default -> true; // Unknown lock type, let other validators handle
+            };
         }
 
         private boolean validateRedisProperties(Map<String, Object> attributes, ConstraintValidatorContext context) {
-            if (!attributes.containsKey("address") || !(attributes.get("address") instanceof String) ||
-                    ((String) attributes.get("address")).trim().isEmpty()) {
+            if (ValidationUtils.validStringAttribute(attributes, "address")) {
                 context.disableDefaultConstraintViolation();
                 context.buildConstraintViolationWithTemplate("Redis address is required")
                         .addPropertyNode("attributes[address]").addConstraintViolation();
                 return false;
             }
 
-            if (!attributes.containsKey("password") || !(attributes.get("password") instanceof String)) {
+            if (ValidationUtils.validStringAttribute(attributes, "password")) {
                 context.disableDefaultConstraintViolation();
                 context.buildConstraintViolationWithTemplate("Redis password is required")
                         .addPropertyNode("attributes[password]").addConstraintViolation();
+                return false;
+            }
+
+            if (ValidationUtils.validIntegerTypeAndRangeAttribute(attributes, "database", integer -> IntStream.rangeClosed(0, 15).noneMatch(v -> v == integer))) {
+                context.disableDefaultConstraintViolation();
+                context.buildConstraintViolationWithTemplate("Redis database type is Integer and value between 0~15")
+                        .addPropertyNode("attributes[database]").addConstraintViolation();
                 return false;
             }
 
@@ -71,15 +73,14 @@ public @interface LockPlatformPropertiesValidator {
         }
 
         private boolean validateRedisClusterProperties(Map<String, Object> attributes, ConstraintValidatorContext context) {
-            if (!attributes.containsKey("nodes") || !(attributes.get("nodes") instanceof String[]) ||
-                    ((String[]) attributes.get("nodes")).length == 0) {
+            if (ValidationUtils.validListStringAttribute(attributes, "nodes")) {
                 context.disableDefaultConstraintViolation();
                 context.buildConstraintViolationWithTemplate("Redis cluster nodes are required")
                         .addPropertyNode("attributes[nodes]").addConstraintViolation();
                 return false;
             }
 
-            if (!attributes.containsKey("password") || !(attributes.get("password") instanceof String)) {
+            if (ValidationUtils.validStringAttribute(attributes, "password")) {
                 context.disableDefaultConstraintViolation();
                 context.buildConstraintViolationWithTemplate("Redis cluster password is required")
                         .addPropertyNode("attributes[password]").addConstraintViolation();
@@ -90,23 +91,21 @@ public @interface LockPlatformPropertiesValidator {
         }
 
         private boolean validateRedisSentinelProperties(Map<String, Object> attributes, ConstraintValidatorContext context) {
-            if (!attributes.containsKey("nodes") || !(attributes.get("nodes") instanceof String[]) ||
-                    ((String[]) attributes.get("nodes")).length == 0) {
+            if (ValidationUtils.validListStringAttribute(attributes, "nodes")) {
                 context.disableDefaultConstraintViolation();
                 context.buildConstraintViolationWithTemplate("Redis sentinel nodes are required")
                         .addPropertyNode("attributes[nodes]").addConstraintViolation();
                 return false;
             }
 
-            if (!attributes.containsKey("password") || !(attributes.get("password") instanceof String)) {
+            if (ValidationUtils.validStringAttribute(attributes, "password")) {
                 context.disableDefaultConstraintViolation();
                 context.buildConstraintViolationWithTemplate("Redis sentinel password is required")
                         .addPropertyNode("attributes[password]").addConstraintViolation();
                 return false;
             }
 
-            if (!attributes.containsKey("masterName") || !(attributes.get("masterName") instanceof String) ||
-                    ((String) attributes.get("masterName")).trim().isEmpty()) {
+            if (ValidationUtils.validStringAttribute(attributes, "masterName")) {
                 context.disableDefaultConstraintViolation();
                 context.buildConstraintViolationWithTemplate("Redis sentinel masterName is required")
                         .addPropertyNode("attributes[masterName]").addConstraintViolation();
@@ -117,11 +116,31 @@ public @interface LockPlatformPropertiesValidator {
         }
 
         private boolean validateZookeeperProperties(Map<String, Object> attributes, ConstraintValidatorContext context) {
-            if (!attributes.containsKey("connect") || !(attributes.get("connect") instanceof String) ||
-                    ((String) attributes.get("connect")).trim().isEmpty()) {
+            if (ValidationUtils.validStringAttribute(attributes, "connect")) {
                 context.disableDefaultConstraintViolation();
                 context.buildConstraintViolationWithTemplate("Zookeeper connect string is required")
                         .addPropertyNode("attributes[connect]").addConstraintViolation();
+                return false;
+            }
+
+            if (ValidationUtils.validIntegerTypeAndRangeAttribute(attributes, "maxElapsedTimeMs", integer -> integer > 0)) {
+                context.disableDefaultConstraintViolation();
+                context.buildConstraintViolationWithTemplate("Zookeeper maxElapsedTimeMs type is Integer and value > 0")
+                        .addPropertyNode("attributes[maxElapsedTimeMs]").addConstraintViolation();
+                return false;
+            }
+
+            if (ValidationUtils.validIntegerTypeAndRangeAttribute(attributes, "sleepMsBetweenRetries", integer -> integer > 0)) {
+                context.disableDefaultConstraintViolation();
+                context.buildConstraintViolationWithTemplate("Zookeeper sleepMsBetweenRetries type is Integer and value > 0")
+                        .addPropertyNode("attributes[sleepMsBetweenRetries]").addConstraintViolation();
+                return false;
+            }
+
+            if (ValidationUtils.validStringTypeAttribute(attributes, "root")) {
+                context.disableDefaultConstraintViolation();
+                context.buildConstraintViolationWithTemplate("Zookeeper root type is String")
+                        .addPropertyNode("attributes[root]").addConstraintViolation();
                 return false;
             }
 

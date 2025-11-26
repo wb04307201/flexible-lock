@@ -1,9 +1,7 @@
-package cn.wubo.flexible.lock.lock.platform.redis;
+package cn.wubo.flexible.lock.core;
 
 import cn.wubo.flexible.lock.exception.LockRuntimeException;
-import cn.wubo.flexible.lock.lock.platform.AbstractLock;
-import cn.wubo.flexible.lock.propertes.LockPlatformProperties;
-import cn.wubo.flexible.lock.retry.IRetryStrategy;
+import cn.wubo.flexible.lock.propertes.FlexibleLockProperties;
 import jakarta.validation.Valid;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -13,15 +11,20 @@ import java.util.concurrent.TimeUnit;
 
 public class RedisClusterLock extends AbstractLock {
 
-    private RedissonClient client;
+    private final RedissonClient client;
 
-    public RedisClusterLock(@Valid LockPlatformProperties properties, IRetryStrategy retryStrategy) {
-        super(properties, retryStrategy);
+    public RedisClusterLock(FlexibleLockProperties properties) {
+        super(properties);
+        this.client = create(properties.getRedisCluster());
+    }
+
+
+    private RedissonClient create(@Valid FlexibleLockProperties.RedisClusterProperties properties) {
         Config config = new Config();
         config.useClusterServers()
-                .addNodeAddress((String[]) properties.getAttributes().get("nodes"))
-                .setPassword((String) properties.getAttributes().get("password"));
-        this.client = Redisson.create(config);
+                .addNodeAddress(properties.getNodes())
+                .setPassword(properties.getPassword());
+        return Redisson.create(config);
     }
 
     @Override
@@ -30,9 +33,9 @@ public class RedisClusterLock extends AbstractLock {
     }
 
     @Override
-    public Boolean tryLock(String key, Long time, TimeUnit unit) {
+    public Boolean tryLock(String key, Long time) {
         try {
-            return client.getLock(key).tryLock(time, unit);
+            return client.getLock(key).tryLock(time, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new LockRuntimeException(e);

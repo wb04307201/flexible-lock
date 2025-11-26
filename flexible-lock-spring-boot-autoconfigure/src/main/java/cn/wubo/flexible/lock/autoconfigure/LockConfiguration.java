@@ -1,87 +1,41 @@
 package cn.wubo.flexible.lock.autoconfigure;
 
 import cn.wubo.flexible.lock.aop.LockAnnotationAspect;
-import cn.wubo.flexible.lock.exception.LockRuntimeException;
-import cn.wubo.flexible.lock.factory.IFactory;
-import cn.wubo.flexible.lock.factory.impl.*;
-import cn.wubo.flexible.lock.lock.ILock;
-import cn.wubo.flexible.lock.propertes.LockProperties;
-import cn.wubo.flexible.lock.retry.IRetryStrategy;
-import cn.wubo.flexible.lock.retry.impl.ExponentialRetryStrategy;
-import cn.wubo.flexible.lock.retry.impl.FixedRetryStrategy;
-import cn.wubo.flexible.lock.retry.impl.RandomRetryStrategy;
-import jakarta.validation.Validator;
+import cn.wubo.flexible.lock.factory.LockFactory;
+import cn.wubo.flexible.lock.factory.RetryStrategyFactory;
+import cn.wubo.flexible.lock.propertes.FlexibleLockProperties;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Configuration
-@EnableConfigurationProperties({LockProperties.class})
+@EnableConfigurationProperties({FlexibleLockProperties.class})
 public class LockConfiguration {
 
     @Bean
-    public List<IFactory> factories() {
-        List<IFactory> list = new ArrayList<>();
-        list.add(new RedisFactory());
-        list.add(new RedisSentinelFactory());
-        list.add(new RedisClusterFactory());
-        list.add(new ZookeeperFactory());
-        list.add(new StandaloneFactory());
-        return list;
+    public LockFactory lockFactory() {
+        return new LockFactory();
     }
 
     @Bean
-    public List<IRetryStrategy> retryStrategies() {
-        List<IRetryStrategy> list = new ArrayList<>();
-        list.add(new FixedRetryStrategy());
-        list.add(new ExponentialRetryStrategy());
-        list.add(new RandomRetryStrategy());
-        return list;
+    public RetryStrategyFactory retryStrategyFactory() {
+        return new RetryStrategyFactory();
     }
-
-    @Bean
-    public List<ILock> locks(LockProperties lockProperties, List<IFactory> factories, List<IRetryStrategy> retryStrategies) {
-        // @formatter:off
-        return lockProperties.getProps().stream()
-                .map(properties -> {
-                    IRetryStrategy rs = retryStrategies.stream()
-                            .filter(retryStrategy -> retryStrategy.supports(properties.getRetryStrategy()))
-                            .findAny()
-                            .orElseThrow(() -> new IllegalArgumentException("Unsupported retry strategy: " + properties.getRetryStrategy()));
-
-                   return factories.stream()
-                            .filter(factory -> factory.supports(properties.getLocktype()))
-                            .findAny()
-                            .orElseThrow(() -> new IllegalArgumentException("Unsupported lock type: " + properties.getLocktype()))
-                            .create(properties, rs);
-
-                })
-                .collect(Collectors.toList());
-        // @formatter:on
-    }
-
 
     /**
-     * 创建LockAnnotationAspect的Bean
+     * 创建分布式锁切面Bean
      *
-     * @param locks       锁集合
-     * @param beanFactory Bean工厂
-     * @return LockAnnotationAspect的Bean实例
+     * @param properties 配置属性，用于初始化锁和重试策略
+     * @param lockFactory 锁工厂，用于创建具体的锁实现
+     * @param retryStrategyFactory 重试策略工厂，用于创建重试策略
+     * @param beanFactory Spring Bean工厂，用于获取Spring管理的Bean
+     * @return LockAnnotationAspect 分布式锁注解切面实例
      */
     @Bean
-    public LockAnnotationAspect lockAspect(List<ILock> locks, BeanFactory beanFactory) {
-        if (locks == null) {
-            throw new IllegalArgumentException("locks parameter cannot be null");
-        }
-        if (beanFactory == null) {
-            throw new IllegalArgumentException("beanFactory parameter cannot be null");
-        }
-        return new LockAnnotationAspect(locks, beanFactory);
+    public LockAnnotationAspect lockAspect(FlexibleLockProperties properties, LockFactory lockFactory, RetryStrategyFactory retryStrategyFactory, BeanFactory beanFactory) {
+        return new LockAnnotationAspect(lockFactory.create(properties), retryStrategyFactory.create(properties), beanFactory);
     }
+
 
 }

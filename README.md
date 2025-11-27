@@ -47,6 +47,21 @@
 </dependency>
 ```
 
+### 增加- Parameters启动参数以支持SpEL表达式
+```xml
+    <build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+                <parameters>true</parameters>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+```
+
 ## 使用方法
 
 ### 基本使用

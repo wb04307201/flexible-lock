@@ -18,10 +18,7 @@ public class DemoController {
 
     @GetMapping(value = "lock")
     public String lock(@RequestParam(name = "key") String key) {
-        IntStream.range(0, 10).forEach(i -> CompletableFuture.runAsync(() -> demoService.doWork1(key)));
-        //IntStream.range(0, 10).forEach(i -> CompletableFuture.runAsync(() -> demoService.doWork2(key)));
-        //IntStream.range(0, 10).forEach(i -> CompletableFuture.runAsync(() -> demoService.doWork3(key)));
-        //IntStream.range(0, 10).forEach(i -> CompletableFuture.runAsync(() -> demoService.doWork4(key)));
+        IntStream.range(0, 10).forEach(i -> CompletableFuture.runAsync(() -> demoService.doWork(key)));
         return "success";
     }
 

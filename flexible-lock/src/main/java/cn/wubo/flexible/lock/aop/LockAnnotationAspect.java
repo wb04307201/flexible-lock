@@ -2,9 +2,11 @@ package cn.wubo.flexible.lock.aop;
 
 import cn.wubo.flexible.lock.annotation.Locking;
 import cn.wubo.flexible.lock.exception.LockRuntimeException;
-import cn.wubo.flexible.lock.lock.ILock;
+import cn.wubo.flexible.lock.core.ILock;
+import cn.wubo.flexible.lock.retry.IRetryStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -15,221 +17,102 @@ import org.springframework.context.expression.MethodBasedEvaluationContext;
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.expression.BeanResolver;
+import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Aspect
 public class LockAnnotationAspect {
 
-    private static final ParameterNameDiscoverer NAME_DISCOVERER = new DefaultParameterNameDiscoverer();
-    private static final ExpressionParser PARSER = new SpelExpressionParser();
-    private final CopyOnWriteArrayList<ILock> locks;
+    private final ILock lock;
+    private final IRetryStrategy retryStrategy;
     private final BeanResolver beanResolver;
+    // SpEL 表达式解析器
+    private final ExpressionParser parser = new SpelExpressionParser();
+    // 用于发现方法参数名的工具
+    private final ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
-    public LockAnnotationAspect(List<ILock> locks, BeanFactory beanFactory) {
-        this.locks = new CopyOnWriteArrayList<>(locks);
+
+    public LockAnnotationAspect(ILock lock, IRetryStrategy retryStrategy, BeanFactory beanFactory) {
+        this.lock = lock;
+        this.retryStrategy = retryStrategy;
         this.beanResolver = new BeanFactoryResolver(beanFactory);
     }
 
-
-    /**
-     * 在执行带有@Locking注解的方法之前，执行此方法以获取锁
-     *
-     * @param joinPoint 切入点，提供了关于目标方法的信息
-     * @param locking   锁定注解，包含锁的配置信息
-     */
     @Before("@annotation(locking)")
     public void before(JoinPoint joinPoint, Locking locking) {
-        try {
-            MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-            ILock lock = getLock(locking.alias());
-
-            tryLock(locking, lock, methodSignature, joinPoint.getTarget(), joinPoint.getArgs());
-        } catch (Exception e) {
-            // 记录详细异常信息
-            String errorMsg = String.format("获取锁时发生异常: alias=%s, method=%s", locking.alias(), joinPoint.getSignature().getName());
-            log.error(errorMsg, e);
-            throw new LockRuntimeException(errorMsg, e);
-        }
+        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+        tryLock(locking, methodSignature, joinPoint.getArgs());
     }
 
-    /**
-     * 在方法执行后进行解锁操作的后置通知方法
-     *
-     * @param joinPoint 切入点对象，包含目标方法的信息
-     * @param locking   锁定注解对象，包含锁的相关配置信息
-     */
     @After("@annotation(locking)")
     public void after(JoinPoint joinPoint, Locking locking) {
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-        ILock lock = getLock(locking.alias());
+        String key = getSpelDefinitionKey(locking.key(), methodSignature.getMethod(), joinPoint.getArgs());
+        lock.unLock(key);
+    }
 
-        try {
-            // 获取当前线程ID和解锁所需的关键信息
-            Long threadId = Thread.currentThread().getId();
-            String newKey = getNewKey(locking.alias(), locking.keys(), joinPoint.getTarget(), methodSignature.getMethod(), joinPoint.getArgs());
-            long startTime = System.currentTimeMillis();
+private String getSpelDefinitionKey(String spelExpression, Method method, Object[] args) {
+    StandardEvaluationContext context = new StandardEvaluationContext();
+    context.setBeanResolver(beanResolver);
+    context.setVariable("method", method);
 
-            // 执行解锁操作
-            lock.unLock(newKey);
-
-            // 记录解锁操作的执行时间并输出调试日志
-            long duration = System.currentTimeMillis() - startTime;
-            log.debug("解锁成功: thread={} method={} alias={} key={} duration={}ms",
-                    threadId, methodSignature.getMethod().getName(), locking.alias(), newKey, duration);
-        } catch (Exception e) {
-            // 记录解锁过程中发生的异常信息
-            log.warn("解锁过程中发生异常: alias={} method={}",
-                    locking.alias(), methodSignature.getMethod().getName(), e);
+    // 设置方法参数名和值
+    String[] paramNames = parameterNameDiscoverer.getParameterNames(method);
+    if (paramNames != null && args.length == paramNames.length) {
+        for (int i = 0; i < paramNames.length; i++) {
+            context.setVariable(paramNames[i], args[i]);
         }
     }
 
+    Expression expression = parser.parseExpression(spelExpression);
+    return expression.getValue(context, String.class);
+}
 
-    /**
-     * 根据别名获取锁
-     *
-     * @param alias 锁的别名
-     * @return 锁对象，如果别名不存在则抛出LockRuntimeException异常
-     */
-    private ILock getLock(String alias) {
-        // 从锁集合中查找支持指定别名的锁，如果找不到则抛出异常
-        return locks.stream().filter(lock -> lock.supportsAlias(alias))
-                .findAny()
-                .orElseThrow(() -> new LockRuntimeException(String.format("Lock not found: alias=%s", alias)));
-    }
 
 
     /**
-     * 根据别名和给定的参数生成一个新的键。
+     * 尝试获取分布式锁
      *
-     * @param alias      别名
-     * @param keys       键的数组
-     * @param rootObject 根对象
-     * @param method     方法
-     * @param args       方法参数
-     * @return 生成的新键
+     * @param locking         锁配置信息，包含锁的key、等待时间、重试次数等配置
+     * @param methodSignature 方法签名，用于获取方法相关信息
+     * @param args            方法调用参数数组
      */
-    private String getNewKey(String alias, String[] keys, Object rootObject, Method method, Object[] args) {
-        if (alias == null) {
-            alias = "";
-        }
+    private void tryLock(Locking locking, MethodSignature methodSignature, Object[] args) {
+        // 解析锁的key值
+        String key = getSpelDefinitionKey(locking.key(), methodSignature.getMethod(), args);
+        // 计算基础等待时间，优先使用locking配置，否则使用默认配置
+        long baseWaitTime = locking.waitTime() > 0 ? locking.waitTime() : lock.getWaitTime();
+        // 计算重试次数，优先使用locking配置，否则使用默认配置
+        int retryCount = locking.retryCount() > 0 ? locking.retryCount() : lock.getRetryCount();
+        log.debug("准备加锁: key={} retryCount={} waitTime={}ms", key, retryCount, baseWaitTime);
 
-        String temp = getSpelDefinitionKey(keys, rootObject, method, args);
-        String prefix = alias + ":" + method.toGenericString();
+        // 循环尝试获取锁，直到成功或达到最大重试次数
+        int count = 1;
+        boolean tryLock;
+        do {
+            // 根据重试策略计算当前等待时间
+            long calculateWaitTime = retryStrategy.calculateWaitTime(baseWaitTime, count);
+            log.debug("加锁: count={} key={} waitTime={}ms", count, key, calculateWaitTime);
+            // 执行加锁操作，根据等待时间是否大于0选择不同的加锁方式
+            tryLock = calculateWaitTime > 0 ? lock.tryLock(key, calculateWaitTime) : lock.tryLock(key);
+            log.debug("加锁结果: count={} key={} waitTime={}ms tryLock={}", count, key, calculateWaitTime, tryLock);
+            count++;
+        } while (!tryLock && count <= retryCount);
 
-        if ("".equals(temp)) {
-            return prefix;
-        } else {
-            return prefix + ":" + temp;
-        }
-    }
-
-
-    /**
-     * 获取SPEL定义的键
-     *
-     * @param keys       键数组，用于构造最终的键值字符串
-     * @param rootObject 根对象，作为SPEL表达式解析的上下文对象
-     * @param method     方法，当前执行的方法，用于SPEL表达式的解析
-     * @param args       参数，当前方法的参数，用于SPEL表达式的解析
-     * @return SPEL定义的键，通过解析给定的键数组中的SPEL表达式并合并结果得到的键值字符串
-     */
-    private String getSpelDefinitionKey(String[] keys, Object rootObject, Method method, Object[] args) {
-        if (keys == null || keys.length == 0) {
-            return "";
-        }
-        if (method == null || args == null) {
-            throw new IllegalArgumentException("method and args must not be null");
-        }
-
-        StandardEvaluationContext context = new MethodBasedEvaluationContext(rootObject, method, args, NAME_DISCOVERER);
-        context.setBeanResolver(beanResolver);
-
-        return Arrays.stream(keys)
-                .filter(Objects::nonNull)
-                .map(key -> {
-                    try {
-                        return PARSER.parseExpression(key).getValue(context, String.class);
-                    } catch (Exception e) {
-                        // 可选：添加日志记录
-                        log.warn("Failed to parse expression: {}", key, e);
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.joining(":"));
-    }
-
-    /**
-     * 尝试获取锁的方法
-     *
-     * @param locking         锁的配置信息，包括别名、键、超时时间等
-     * @param lock            锁的实现对象，用于执行实际的锁操作
-     * @param methodSignature 方法签名，包含方法名、参数类型等信息，用于日志记录
-     * @param target          目标对象，即被拦截的方法所属的实例
-     * @param args            方法参数数组，用于日志记录和生成锁的键
-     */
-    private void tryLock(Locking locking, ILock lock, MethodSignature methodSignature, Object target, Object[] args) {
-        Long threadId = Thread.currentThread().getId();
-
-        String methodName = methodSignature.getMethod().getName();
-        String alias = locking.alias();
-        String key = getNewKey(locking.alias(), locking.keys(), target, methodSignature.getMethod(), args);
-        ;
-
-        log.debug("尝试加锁: thread={} method={} alias={} key={}", threadId, methodName, alias, key);
-
-        long startTime = System.currentTimeMillis();
-        Boolean tryLock = locking.time() > 0 ? lock.tryLock(key, locking.time(), locking.unit()) : lock.tryLock(key);
-        long duration = System.currentTimeMillis() - startTime;
-
-        int count = 0;
-        long totalWaitTime = 0;
-
-        if (!Boolean.TRUE.equals(tryLock)) {
-            int retryCount = lock.getRetryCount();
-
-            while (!Boolean.TRUE.equals(tryLock) && ((retryCount > 0 && count < retryCount) || retryCount < 0)) {
-                count++;
-                try {
-                    long waitTime = lock.calculateBackoffTime(count);
-                    totalWaitTime += waitTime;
-
-                    log.debug("加锁失败，第{}次重试: thread={} method={} alias={} key={} waitTime={}ms",
-                            count, threadId, methodName, alias, key, waitTime);
-
-                    if (waitTime > 0) {
-                        Thread.sleep(waitTime);
-                    } else {
-                        Thread.yield();
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    log.warn("获取锁过程中被中断: method={} alias={} key={} retryCount={}",
-                            methodName, alias, key, count, e);
-                }
-
-                tryLock = locking.time() > 0 ? lock.tryLock(key, locking.time(), locking.unit()) : lock.tryLock(key);
-            }
-        }
-
-        if (!Boolean.TRUE.equals(tryLock)) {
-            String errorMsg = String.format("获取锁失败: method=%s alias=%s key=%s totalRetryTime=%dms retryCount=%d",
-                    methodName, alias, key, totalWaitTime, count);
-            log.debug(errorMsg);
-            throw new LockRuntimeException(errorMsg);
-        } else {
-            log.debug("加锁成功: thread={} method={} alias={} key={} duration={}ms",
-                    threadId, methodName, alias, key, duration);
+        // 如果最终仍未获取到锁，则抛出异常
+        if (!tryLock) {
+            String message = String.format("加锁失败: key=%s", key);
+            log.debug(message);
+            throw new LockRuntimeException(message);
         }
     }
 

@@ -12,10 +12,4 @@ public interface IRetryStrategy {
      * @return 等待时间（毫秒）
      */
     long calculateWaitTime(long baseWaitTime, int retryCount);
-
-    /**
-     * 判断是否支持获取策略
-     * @return 是否支持
-     */
-    Boolean supports(String retryStrategy);
 }

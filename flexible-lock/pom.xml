@@ -34,10 +34,6 @@
             <groupId>org.springframework.integration</groupId>
             <artifactId>spring-integration-zookeeper</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.gitee.wb04307201</groupId>
-            <artifactId>CHMRLock</artifactId>
-        </dependency>
     </dependencies>
 
 

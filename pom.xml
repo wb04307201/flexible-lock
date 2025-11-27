@@ -40,7 +40,6 @@
         <logback.version>1.5.18</logback.version>
         <redisson.version>3.52.0</redisson.version>
         <zookeeper.version>6.5.1</zookeeper.version>
-        <CHMLock.version>1.0.1</CHMLock.version>
     </properties>
 
     <dependencyManagement>
@@ -72,20 +71,8 @@
                 <artifactId>spring-integration-zookeeper</artifactId>
                 <version>${zookeeper.version}</version>
             </dependency>
-            <dependency>
-                <groupId>com.gitee.wb04307201</groupId>
-                <artifactId>CHMRLock</artifactId>
-                <version>${CHMLock.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <repositories>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-    </repositories>
 
 
 </project>

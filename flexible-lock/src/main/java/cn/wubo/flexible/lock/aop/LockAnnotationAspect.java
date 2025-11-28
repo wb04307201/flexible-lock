@@ -90,9 +90,9 @@ private String getSpelDefinitionKey(String spelExpression, Method method, Object
         // 解析锁的key值
         String key = getSpelDefinitionKey(locking.key(), methodSignature.getMethod(), args);
         // 计算基础等待时间，优先使用locking配置，否则使用默认配置
-        long baseWaitTime = locking.waitTime() > 0 ? locking.waitTime() : lock.getWaitTime();
+        long baseWaitTime = locking.waitTime() > -1 ? locking.waitTime() : lock.getWaitTime();
         // 计算重试次数，优先使用locking配置，否则使用默认配置
-        int retryCount = locking.retryCount() > 0 ? locking.retryCount() : lock.getRetryCount();
+        int retryCount = locking.retryCount() > -1 ? locking.retryCount() : lock.getRetryCount();
         log.debug("准备加锁: key={} retryCount={} waitTime={}ms", key, retryCount, baseWaitTime);
 
         // 循环尝试获取锁，直到成功或达到最大重试次数

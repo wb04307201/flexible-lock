@@ -1,7 +1,10 @@
-# Flexible Lock 灵锁
+# Flexible Lock
 
-> 一个基于Spring Boot的锁starter，提供了统一的锁接口和多种实现方式，包括Redis单点、Redis集群、Redis哨兵、Zookeeper和本地锁。通过简单的配置即可在项目中使用锁功能。
+<div align="right">
+  English | <a href="README.zh-CN.md">中文</a>
+</div>
 
+> A Spring Boot-based lock starter that provides a unified lock interface with multiple implementations including Redis standalone, Redis cluster, Redis sentinel, Zookeeper, and local locks. You can easily use locking functionality in your project through simple configuration.
 
 [![](https://jitpack.io/v/com.gitee.wb04307201/flexible-lock.svg)](https://jitpack.io/#com.gitee.wb04307201/flexible-lock)
 [![star](https://gitee.com/wb04307201/flexible-lock/badge/star.svg?theme=dark)](https://gitee.com/wb04307201/flexible-lock)
@@ -10,25 +13,25 @@
 [![fork](https://img.shields.io/github/forks/wb04307201/flexible-lock)](https://github.com/wb04307201/flexible-lock)  
 ![MIT](https://img.shields.io/badge/License-Apache2.0-blue.svg) ![JDK](https://img.shields.io/badge/JDK-17+-green.svg) ![SpringBoot](https://img.shields.io/badge/Srping%20Boot-3+-green.svg)
 
-## 特性
+## Features
 
-- 支持多种锁实现:
-    - Redis单点模式
-    - Redis集群模式
-    - Redis哨兵模式
-    - Zookeeper分布式锁
-    - 单机ReentrantLock锁
-- 多种重试策略:
-    - 固定时间间隔重试
-    - 指数退避重试
-    - 随机退避重试
-- 基于注解的锁机制
-- 支持SpEL表达式定义锁key
-- 可配置的重试次数和等待时间
+- Support for multiple lock implementations:
+    - Redis standalone mode
+    - Redis cluster mode
+    - Redis sentinel mode
+    - Zookeeper distributed lock
+    - Standalone ReentrantLock
+- Multiple retry strategies:
+    - Fixed interval retry
+    - Exponential backoff retry
+    - Random backoff retry
+- Annotation-based locking mechanism
+- Support for SpEL expressions to define lock keys
+- Configurable retry count and waiting time
 
-## 引入
+## Installation
 
-### 增加 JitPack 仓库
+### Add JitPack Repository
 ```xml
 <repositories>
     <repository>
@@ -38,7 +41,8 @@
 </repositories>
 ```
 
-### 引入jar
+
+### Add Dependency
 ```xml
 <dependency>
     <groupId>com.gitee.wb04307201.flexible-lock</groupId>
@@ -47,9 +51,10 @@
 </dependency>
 ```
 
-### 增加- Parameters启动参数以支持SpEL表达式
+
+### Add Parameters Compiler Option for SpEL Expression Support
 ```xml
-    <build>
+<build>
     <plugins>
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
@@ -62,11 +67,12 @@
 </build>
 ```
 
-## 使用方法
 
-### 基本使用
+## Usage
 
-在需要加锁的方法上添加`@Locking`注解：
+### Basic Usage
+
+Add the `@Locking` annotation to methods that require locking:
 
 ```java
 @Service
@@ -74,48 +80,49 @@ public class BusinessService {
 
     @Locking(key = "#userId + '-' + #orderId")
     public void processOrder(String userId, String orderId) {
-        // 业务逻辑
+        // Business logic
     }
 }
 ```
 
-### 注解参数说明
 
-| 属性         | 类型     | 默认值 | 描述                    |
-|------------|--------|-----|-----------------------|
-| key        | String |     | 锁的 key，必填，支持 SpEL 表达式 |
-| waitTime   | long   | -1  | 锁的超时时间，-1表示使用全局配置     |
-| retryCount | int    | -1  | 重试次数，-1表示使用全局配置       |
+### Annotation Parameters
 
-### 配置
+| Property   | Type   | Default | Description                                      |
+|------------|--------|---------|--------------------------------------------------|
+| key        | String |         | Lock key, required, supports SpEL expressions    |
+| waitTime   | long   | -1      | Lock timeout, -1 means using global configuration |
+| retryCount | int    | -1      | Retry count, -1 means using global configuration  |
 
-默认使用单机ReentrantLock锁，重试等待时间策略为fixed，如想使用其他所请修改配置
+### Configuration
+
+By default, standalone ReentrantLock is used with fixed retry strategy. To use other lock types, modify the configuration accordingly.
 
 ```yaml
 flexible:
   lock:
-    retryCount: 3    # 重试次数，0不重试，默认为3
-    waitTime: 3000   # 等待时间(毫秒)，默认3000
-    #  重试等待时间策略   
-    #  fixed(固定，默认)
-    #  exponential(指数退避, 重试间隔按指数增长)
-    #  random(在基础等待时长内随机)
+    retryCount: 3    # Number of retries, 0 means no retry, default is 3
+    waitTime: 3000   # Wait time (milliseconds), default is 3000
+    # Retry strategy type
+    # fixed (fixed, default)
+    # exponential (exponential backoff, retry interval increases exponentially)
+    # random (random within base wait time)
     retryStrategyType: fixed 
-    # Redis单点配置示例
+    # Redis standalone configuration example
     lockType: redis
     redis:
       host: "redis://127.0.0.1"
       port: 6379
       password: ""
       database: 0
-    # Redis集群配置示例
+    # Redis cluster configuration example
     lockType: redis_cluster
     redisCluster:
       nodes:
         - "redis://127.0.0.1:7000"
         - "redis://127.0.0.1:7001"
       password: ""
-    # Redis哨兵配置示例
+    # Redis sentinel configuration example
     lockType: redis_sentinel
     redisSentinel:
       nodes:
@@ -124,17 +131,17 @@ flexible:
       master: "mymaster"
       password: ""
       database: 0
-    # Zookeeper配置示例
+    # Zookeeper configuration example
     lockType: zookeeper
     zookeeper:
       connectString: "127.0.0.1:2181"
       maxElapsedTimeMs: 1000
       sleepMsBetweenRetries: 4
       root: "/locks"
-    # 单机ReentrantLock锁配置示例,默认配置
+    # Standalone ReentrantLock configuration example, default configuration
     lockType: standalone
 
-# debug日志
+# Debug logging
 logging:
   level:
     cn:
@@ -143,8 +150,9 @@ logging:
           lock: debug
 ```
 
-## 重试策略
 
-1. **Fixed（固定间隔）**：每次重试间隔固定为基础等待时间
-2. **Exponential（指数退避）**：重试间隔按指数增长
-3. **Random（随机退避）**：在基础等待时间基础上增加随机因素
+## Retry Strategies
+
+1. **Fixed**: Each retry has a fixed interval equal to the base wait time
+2. **Exponential**: Retry intervals increase exponentially
+3. **Random**: Adds randomness to the base wait time

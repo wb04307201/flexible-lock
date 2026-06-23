@@ -9,6 +9,15 @@ import org.redisson.config.Config;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Redis 单机模式锁后端，基于 Redisson {@link RedissonClient}。
+ *
+ * <p>构造时按 {@link FlexibleLockProperties.RedisStandaloneProperties} 创建
+ * 一个单例连接的 Redisson 客户端，由 Spring 在容器关闭时通过
+ * {@code @Bean(destroyMethod = "shutdown")} 调用 {@link #shutdown()} 释放。
+ *
+ * <p>锁通过 Redisson 的 {@code RLock} 实现，支持可重入和 watchdog 自动续期。
+ */
 public class RedisLock extends AbstractLock {
 
     private final RedissonClient client;
@@ -46,5 +55,10 @@ public class RedisLock extends AbstractLock {
     @Override
     public void unLock(String key) {
         client.getLock(key).unlock();
+    }
+
+    @Override
+    public void shutdown() {
+        client.shutdown();
     }
 }

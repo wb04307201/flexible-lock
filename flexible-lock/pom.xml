@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.gitee.wb04307201</groupId>
+        <groupId>io.github.wb04307201</groupId>
         <artifactId>flexible-lock-parent</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
@@ -23,10 +23,6 @@
             <artifactId>lombok</artifactId>
         </dependency>
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson</artifactId>
         </dependency>
@@ -34,7 +30,27 @@
             <groupId>org.springframework.integration</groupId>
             <artifactId>spring-integration-zookeeper</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <!-- Required so DefaultParameterNameDiscoverer can resolve
+                         method parameter names used in @Locking SpEL keys
+                         like key = "#userId + '-' + #orderId". -->
+                    <parameters>true</parameters>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 
 </project>

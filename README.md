@@ -39,7 +39,7 @@
 <dependency>
     <groupId>io.github.wb04307201.flexible-lock</groupId>
     <artifactId>flexible-lock-spring-boot-starter</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.1.9</version>
 </dependency>
 ```
 

@@ -8,6 +8,8 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
     <artifactId>flexible-lock-spring-boot-starter</artifactId>
+    <name>Flexible Lock Spring Boot Starter</name>
+    <description>Spring Boot starter for Flexible Lock — provides a unified @Locking annotation backed by pluggable lock implementations (Redis, ZooKeeper, local ReentrantLock, no-op).</description>
     <packaging>jar</packaging>
     <dependencies>
         <dependency>

@@ -41,13 +41,6 @@
         <module>flexible-lock-test</module>
     </modules>
 
-    <scm>
-        <url>https://gitee.com/wb04307201/flexible-lock</url>
-        <connection>scm:git:https://gitee.com/wb04307201/flexible-lock.git</connection>
-        <developerConnection>scm:git:https://gitee.com/wb04307201/flexible-lock.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
-
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>

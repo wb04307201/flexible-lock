@@ -1,0 +1,55 @@
+* { box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    margin: 0;
+    background: #f4f6fa;
+    color: #1f2937;
+}
+header {
+    background: linear-gradient(120deg, #1e3a8a 0%, #1e40af 100%);
+    color: white;
+    padding: 16px 24px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+header h1 { margin: 0 0 8px 0; font-size: 22px; }
+.config-bar { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+.config-bar .meta strong { color: #fef3c7; }
+.config-bar .legacy { color: #c7d2fe; text-decoration: none; border: 1px solid #6366f1; padding: 2px 8px; border-radius: 4px; }
+.config-bar .legacy:hover { background: #4338ca; color: white; }
+.badge.backend { background: #f59e0b; color: #1e293b; padding: 3px 10px; border-radius: 12px; font-weight: 600; font-size: 12px; }
+main { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
+.card { background: white; border-radius: 8px; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.card h2 { margin: 0 0 8px 0; font-size: 17px; color: #1e3a8a; display: flex; align-items: center; gap: 12px; }
+.card h2 .hint.inline { margin-left: auto; }
+.hint { color: #6b7280; font-size: 13px; line-height: 1.6; margin: 0 0 12px 0; }
+.hint code { background: #f3f4f6; padding: 1px 6px; border-radius: 3px; font-size: 12px; color: #be185d; }
+
+.demo-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.demo-table th, .demo-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #f3f4f6; font-size: 14px; }
+.demo-table th { color: #6b7280; font-weight: 500; font-size: 12px; text-transform: uppercase; }
+.demo-table td code { background: #eff6ff; color: #1d4ed8; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+.key-input, .order-key-input, .count-input { padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 13px; width: 100%; max-width: 180px; }
+.count-input { max-width: 80px; }
+button { padding: 4px 12px; border: 1px solid #d1d5db; background: white; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 4px; transition: all 0.15s; }
+button:hover { background: #f9fafb; }
+.invoke-btn { border-color: #2563eb; color: #2563eb; }
+.invoke-btn:hover { background: #2563eb; color: white; }
+.burst-btn { border-color: #ea580c; color: #ea580c; }
+.burst-btn:hover { background: #ea580c; color: white; }
+.clear-btn { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+.clear-btn:hover { background: #fecaca; }
+
+.log-table-wrap { max-height: 360px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; }
+.log-table { width: 100%; border-collapse: collapse; }
+.log-table th, .log-table td { padding: 8px 12px; text-align: left; font-size: 13px; border-bottom: 1px solid #f3f4f6; }
+.log-table th { background: #f9fafb; color: #6b7280; font-weight: 500; position: sticky; top: 0; }
+.log-table td.empty { text-align: center; color: #9ca3af; padding: 20px; }
+.log-table tr.status-SUCCESS td.status { color: #047857; font-weight: 600; }
+.log-table tr.status-FAILURE td.status { color: #b91c1c; font-weight: 600; }
+.log-table tr.status-ERROR td.status { color: #c2410c; font-weight: 600; }
+.log-table tr.status-UNKNOWN td.status { color: #6b7280; }
+.log-table tr.new-row { animation: highlight 1.5s ease-out; }
+@keyframes highlight { 0% { background: #fef3c7; } 100% { background: transparent; } }
+
+footer { text-align: center; color: #6b7280; padding: 24px; font-size: 12px; line-height: 1.8; }
+footer code { background: #e5e7eb; padding: 1px 6px; border-radius: 3px; }

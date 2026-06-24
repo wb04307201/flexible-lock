@@ -9,9 +9,18 @@ import org.redisson.config.Config;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Redis 哨兵模式锁后端，基于 Redisson {@link RedissonClient}。
+ *
+ * <p>按 {@link FlexibleLockProperties.RedisSentinelProperties} 指定的哨兵地址和
+ * master 名称发现主从节点，由 Spring 在容器关闭时通过
+ * {@code @Bean(destroyMethod = "shutdown")} 调用 {@link #shutdown()} 释放。
+ *
+ * <p>锁语义与 {@link RedisLock} 相同：可重入、watchdog 自动续期。
+ */
 public class RedisSentinelLock extends AbstractLock {
 
-    private RedissonClient client;
+    private final RedissonClient client;
 
     public RedisSentinelLock(FlexibleLockProperties properties) {
         super(properties);
@@ -47,5 +56,10 @@ public class RedisSentinelLock extends AbstractLock {
     @Override
     public void unLock(String key) {
         client.getLock(key).unlock();
+    }
+
+    @Override
+    public void shutdown() {
+        client.shutdown();
     }
 }

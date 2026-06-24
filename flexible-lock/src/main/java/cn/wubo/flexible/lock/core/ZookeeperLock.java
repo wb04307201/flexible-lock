@@ -8,27 +8,50 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryUntilElapsed;
 import org.springframework.integration.zookeeper.lock.ZookeeperLockRegistry;
 
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * ZooKeeper 分布式锁后端，基于 Spring Integration 的 {@link ZookeeperLockRegistry}。
+ *
+ * <p>底层用 {@link CuratorFramework}（通过 {@code CuratorFrameworkFactory.builder()}
+ * 而不是 {@code newClient()} 构造，以便支持 {@code digest} 认证 ACL）。当 ZK 节点
+ * 配了 ACL 而客户端未提供正确凭证时，所有加锁都会失败。
+ *
+ * <p>由 Spring 在容器关闭时通过 {@code @Bean(destroyMethod = "shutdown")} 调用
+ * {@link #shutdown()} 关闭底层 Curator 连接。
+ */
 public class ZookeeperLock extends AbstractLock {
 
-    private ZookeeperLockRegistry zookeeperLockRegistry;
+    private final CuratorFramework curatorFramework;
+    private final ZookeeperLockRegistry zookeeperLockRegistry;
 
     public ZookeeperLock(FlexibleLockProperties properties) {
         super(properties);
-        this.zookeeperLockRegistry = create(properties.getZookeeper());
+        this.curatorFramework = create(properties.getZookeeper());
+        this.zookeeperLockRegistry = new ZookeeperLockRegistry(curatorFramework, properties.getZookeeper().getRoot());
     }
 
-    private ZookeeperLockRegistry create(@Valid FlexibleLockProperties.ZookeeperProperties properties) {
-        CuratorFramework curatorFramework = CuratorFrameworkFactory.newClient(
-                properties.getConnectString(),
-                new RetryUntilElapsed(
+    /**
+     * Build and start a {@link CuratorFramework}.
+     *
+     * <p>使用 builder() 而不是 newClient() 以支持 digest 认证。
+     * 当 ZooKeeper 节点配置了 ACL（create /digest 用户名:密码）时，
+     * 没有正确认证的客户端会被节点拒绝读写，所有加锁操作都会失败。
+     */
+    private CuratorFramework create(@Valid FlexibleLockProperties.ZookeeperProperties properties) {
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
+                .connectString(properties.getConnectString())
+                .retryPolicy(new RetryUntilElapsed(
                         properties.getMaxElapsedTimeMs(),
                         properties.getSleepMsBetweenRetries()
-                )
-        );
-        curatorFramework.start();
-        return new ZookeeperLockRegistry(curatorFramework,properties.getRoot());
+                ));
+        if (properties.getDigest() != null && !properties.getDigest().isEmpty()) {
+            builder.authorization("digest", properties.getDigest().getBytes(StandardCharsets.UTF_8));
+        }
+        CuratorFramework cf = builder.build();
+        cf.start();
+        return cf;
     }
 
     @Override
@@ -50,5 +73,10 @@ public class ZookeeperLock extends AbstractLock {
     @Override
     public void unLock(String key) {
         zookeeperLockRegistry.obtain(key).unlock();
+    }
+
+    @Override
+    public void shutdown() {
+        curatorFramework.close();
     }
 }

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Flexible Lock 控制台</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+    <h1>🔒 Flexible Lock 控制台</h1>
+    <div class="config-bar">
+        <span class="badge backend" th:text="${lockType != null ? lockType : 'STANDALONE (default)'}">BACKEND</span>
+        <span class="meta">重试策略: <strong th:text="${retryStrategyType != null ? retryStrategyType : 'FIXED'}">FIXED</strong></span>
+        <span class="meta">retryCount: <strong th:text="${retryCount}">3</strong></span>
+        <span class="meta">waitTime: <strong th:text="${waitTime}">3000</strong> ms</span>
+        <a class="legacy" href="/test/lock?key=hello" target="_blank">/test/lock 旧接口 →</a>
+    </div>
+</header>
+
+<main>
+    <section class="card">
+        <h2>① DemoService — 5 个 @Locking 用法</h2>
+        <p class="hint">
+            每个方法演示一种 <code>@Locking</code> 写法的差异。点击「调用」会同步执行一次；点击「并发」会发起 N 个并发请求并展示谁拿到了锁、谁失败。
+        </p>
+        <table class="demo-table">
+            <thead>
+            <tr>
+                <th>方法</th>
+                <th>说明</th>
+                <th>key</th>
+                <th>并发数</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="d : ${demos}">
+                <td><code th:text="${d.method}">method</code></td>
+                <td th:text="${d.description}">description</td>
+                <td><input type="text" class="key-input" th:attr="data-method=${d.method}" value="ui-key"></td>
+                <td><input type="number" class="count-input" value="5" min="1" max="50"></td>
+                <td>
+                    <button class="invoke-btn" th:attr="data-method=${d.method}">调用</button>
+                    <button class="burst-btn" th:attr="data-method=${d.method}">并发</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="card">
+        <h2>② OrderService — 类级 vs 方法级</h2>
+        <p class="hint">
+            整个类用 <code>@Locking(key = "'order-' + #orderId", waitTime = 5000, retryCount = 5)</code> 标记。
+            <code>create</code> / <code>cancel</code> 继承类级配置；<code>forceUpdate</code> 用方法级 <code>@Locking</code> override（更短 wait, 0 重试 — 失败会更快抛出）。
+        </p>
+        <table class="demo-table">
+            <thead>
+            <tr>
+                <th>方法</th>
+                <th>说明</th>
+                <th>orderId</th>
+                <th>并发数</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="d : ${orderDemos}">
+                <td><code th:text="${d.method}">method</code></td>
+                <td th:text="${d.description}">description</td>
+                <td><input type="text" class="order-key-input" th:attr="data-method=${d.method}" value="o-100"></td>
+                <td><input type="number" class="count-input" value="5" min="1" max="50"></td>
+                <td>
+                    <button class="invoke-btn order-btn" th:attr="data-method=${d.method}">调用</button>
+                    <button class="burst-btn order-btn" th:attr="data-method=${d.method}">并发</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="card">
+        <h2>③ 实时日志
+            <button class="clear-btn" id="clear-log">清空日志</button>
+            <span class="hint inline" id="last-update">尚未刷新</span>
+        </h2>
+        <div class="log-table-wrap">
+            <table class="log-table">
+                <thead>
+                <tr>
+                    <th style="width:24%">key</th>
+                    <th style="width:10%">状态</th>
+                    <th style="width:12%">耗时(ms)</th>
+                    <th>消息</th>
+                </tr>
+                </thead>
+                <tbody id="log-body">
+                <tr><td colspan="4" class="empty">日志为空。点上面的按钮试试。</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <small>
+        SpEL 表达式在
+        <code>StandardEvaluationContext</code> 中执行，可访问 <code>#method</code>、
+        方法参数（<code>#param</code>）、<code>@beanName</code>。
+        后端通过 <code>application.yml</code> 的 <code>flexible.lock.lockType</code> 切换。
+    </small>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>

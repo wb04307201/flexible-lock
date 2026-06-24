@@ -10,21 +10,29 @@
 
     <packaging>pom</packaging>
     <name>Flexible Lock Parent</name>
-    <description>Parent POM for the Flexible Lock Spring Boot starter (pluggable lock backends: Redis, ZooKeeper, local ReentrantLock, no-op).</description>
-    <url>
-        https://gitee.com/wb04307201/flexible-lock
-    </url>
+    <description>一个基于Spring Boot的锁starter，提供了统一的锁接口和多种实现方式，包括Redis单点、Redis集群、Redis哨兵、Zookeeper、本地锁以及用于测试场景的 no-op。通过简单的配置即可在项目中使用锁功能。</description>
+    <url>https://github.com/wb04307201/flexible-lock</url>
+
+    <developers>
+        <developer>
+            <id>wb04307201</id>
+            <name>wubo</name>
+            <email>wubo_aaa@163.com</email>
+        </developer>
+    </developers>
+
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
             <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
-    <developers>
-        <developer>
-            <name>wubo</name>
-        </developer>
-    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/wb04307201/flexible-lock.git</connection>
+        <developerConnection>scm:git:git@github.com:wb04307201/flexible-lock.git</developerConnection>
+        <url>https://github.com/wb04307201/flexible-lock</url>
+    </scm>
 
     <modules>
         <module>flexible-lock</module>
